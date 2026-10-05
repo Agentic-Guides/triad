@@ -56,6 +56,12 @@ const server = createServer(async (req, res) => {
     return json(res, 200, triad.triadGetLedger());
   }
 
+  if (req.method === 'POST' && url.pathname === '/api/verify') {
+    const body = await readJson(req);
+    try { return json(res, 200, await triad.triadVerifyReceipt(body)); }
+    catch (e) { return json(res, 500, { error: String(e) }); }
+  }
+
   res.writeHead(404); res.end('Not found');
 });
 

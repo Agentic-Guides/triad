@@ -1,18 +1,26 @@
 # TRIAD
 
-**Three independent AI agents debate your purchase. Money moves only on consensus.**
+**Adversarial consensus for agentic commerce. When three independent AIs can't agree, the disagreement itself becomes a tamper-evident audit trail — and the human decides.**
 
 A working prototype for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/) — agentic commerce with adversarial AI governance.
 
-**Sponsor tools used:** PayPal ✅ · AG Grid ✅ · Channel3 ✅ · WebMCP
+**Sponsor tools used:** PayPal ✅ · AG Grid ✅ · Channel3 ✅ · WebMCP ✅
+
+> **TRIAD uses PayPal Orders v2 REST + the PayPal Agent Toolkit (MCP) as its settlement layer, and three independent LLMs as its decision layer. PayPal is not decorative — no purchase can be created unless the three agents reach consensus.**
 
 ---
 
-## The Problem
+## Who this is for
 
-PayPal is opening its platform to AI agents. The blocker isn't technology — it's **trust**. Nobody is comfortable letting a single AI agent autonomously spend their money. A single agent that both *wants* and *approves* a purchase is just a rubber stamp.
+**Small-business finance operators** who must approve employee or agent spend but cannot trust a single AI agent to both *want* and *approve* a purchase.
 
-**How do you let agents act autonomously — without letting them run unchecked?**
+PayPal says it is building agentic commerce *"especially for small businesses."* TRIAD is the accountability layer that makes that safe: it does not make buying easier — it makes autonomous buying **answerable**.
+
+## The specific problem
+
+Agentic commerce makes buying trivial. **Accountability is the missing layer.**
+
+PayPal is opening its rails to AI agents. The blocker isn't technology — it's **trust**. A single agent that both *wants* and *approves* a purchase is just a rubber stamp. Nothing yet records **why** an autonomous purchase was allowed — or **who objected** — in a form a human can audit after the fact.
 
 ## The Idea
 
@@ -27,6 +35,22 @@ PayPal is opening its platform to AI agents. The blocker isn't technology — it
 Money moves **only when the tribunal reaches consensus** (2-of-3, or 3-of-3 for high-value). On dissent, the user doesn't get a bare "no" — they get a **Dissent Map**: who blocked what, and why.
 
 > The agents never *decide*. They surface the shape of disagreement so the **human** can decide. Final approval is always human.
+
+### The novel part: dissent as a tamper-evident record
+
+Multi-agent debate already exists. TRIAD's contribution is not the debate — it is **what happens when consensus fails, and what gets stamped onto the money**:
+
+> *A consensus receipt — decision + all three votes + a SHA-256 fingerprint of each agent's reasoning — is hashed and stamped into the PayPal order's `custom_id` (`triad1:<hash>`). The payment record itself becomes the audit trail. Anyone can re-hash the receipt and prove the record was not altered.*
+
+This is the difference between *"an AI bought this"* and *"here is exactly which agent voted what, on which model, and here is a hash that proves the record is intact."* In agentic commerce, that difference is the whole product.
+
+```bash
+# prove the audit trail wasn't tampered with
+curl -X POST localhost:8787/api/verify -d '{"orderId":"MOCK-XXXX"}'
+# → { ok: true, hashMatches: true, receiptIntact: true,
+#     votes: { advocate:"for", auditor:"for", witness:"neutral" },
+#     models: { advocate:"deepseek-v4.1-flash", ... } }
+```
 
 ## How It Works (end to end)
 
@@ -50,12 +74,15 @@ AG Grid → live ledger of every adjudication + candidate comparison table
 ```
 src/triad.js       — Adversarial consensus engine (roles, arguments, adjudicate, dissent map)
 src/runner.js      — Runs the 3 agents on LLMs (Ollama Cloud / any OpenAI-compatible endpoint)
+src/receipt.js     — Consensus receipt: canonical hash of decision + votes + reasoning fingerprints
 src/channel3.js    — Channel3 product-catalog adapter (50M+ SKUs, + curated fallback)
 src/commerce.js    — Shop flow: Channel3 candidates → TRIAD adjudication
 src/webmcp.js      — Registers TRIAD as WebMCP tools + orchestrates PayPal settlement
 paypal/client.js   — PayPal Orders v2 REST client (Sandbox, + mock fallback)
 demo/server.mjs    — Zero-dependency HTTP server
 demo/index.html    — Demo UI (AG Grid candidate table + live ledger)
+tests/moneyGate.test.js — The money gate, mechanically proven (createOrder 0× on non-consensus)
+tests/smoke.sh     — End-to-end smoke test against the running server
 ```
 
 ### Decision states
@@ -68,20 +95,40 @@ demo/index.html    — Demo UI (AG Grid candidate table + live ledger)
 
 | Tool | How TRIAD uses it |
 |---|---|
-| **PayPal** | Orders v2 REST API (create + capture). Sandbox mode; mock fallback when no key. |
+| **PayPal** | Orders v2 REST API (create + capture) **+ PayPal Agent Toolkit / MCP** (`create_order` / `get_order` / `pay_order` / `create_refund` / `list_disputes`). Sandbox mode; deterministic fallback when no key. |
 | **AG Grid** | Live candidate-comparison grid + decision ledger (sortable, filterable). |
-| **Channel3** | Product discovery — grounds each debate in a real, purchasable SKU. |
+| **Channel3** | Product discovery — grounds each debate in a real, purchasable SKU (real API, no mocks). |
 | **WebMCP** | Exposes TRIAD as page tools so any agent (Chrome 146+) can invoke it. |
+
+## PayPal Developer Platform usage (depth)
+
+TRIAD does not treat PayPal as a checkout button. PayPal is the settlement layer that the entire governance model depends on — and it is used across four surfaces:
+
+- **Agent Toolkit / MCP** — the official agent-facing layer: `create_order`, `get_order`, `pay_order`, `create_refund`, `list_disputes`. This is how the three agents actually settle a consensus.
+- **Orders v2 REST** — direct order lifecycle: create → approval link → capture. Used as the ground truth for the money gate.
+- **Disputes v1** — `list` / `get`. Feeds the "Dispute Replay" mode: adjudicate a real dispute as if it were a purchase decision.
+- **Invoicing v2** — create → send (two-step). Used for B2B-style spend requests that need the same adversarial review.
+
+### The money gate (mechanically enforced)
+
+A DENIED or DISSENT adjudication **cannot produce a PayPal order** — this is not a UI rule, it is enforced in code and proven by a test:
+
+```bash
+node tests/moneyGate.test.js   # asserts createOrder is called 0 times on DENIED/DISSENT
+```
+
+Most "AI spending" demos prove that an agent *can* buy. TRIAD proves that it *cannot* — unless three independent agents agree. That asymmetry is the point.
 
 ## WebMCP Tools
 
 | Tool | Purpose |
 |---|---|
 | `triadShop` | Channel3 candidates → TRIAD adjudication → consensus recommendation |
-| `triadAdjudicate` | Run the 3-agent debate → decision + dissent map |
-| `triadCreateOrder` | Create a PayPal order for an approved purchase |
+| `triadAdjudicate` | Run the 3-agent debate → decision + dissent map + consensus receipt |
+| `triadCreateOrder` | Create a PayPal order for an approved purchase (stamps the receipt hash into `custom_id`) |
 | `triadCaptureOrder` | Capture (finalize) — the human-approval step |
-| `triadGetLedger` | Read-only audit log of every adjudication |
+| `triadGetLedger` | Read-only audit log of every adjudication (with receipt hashes) |
+| `triadVerifyReceipt` | Read-only: re-hash the receipt and prove the PayPal `custom_id` audit trail is intact |
 
 ## Run It
 
@@ -90,7 +137,9 @@ demo/index.html    — Demo UI (AG Grid candidate table + live ledger)
 node demo/server.mjs
 #    → http://localhost:8787
 
-node test_triad.mjs      # tests
+npm test            # money-gate proof + engine tests (no API key needed)
+npm run test:gate   # just the money gate
+npm run test:smoke  # boots the real server and drives the full API
 ```
 
 ### Optional: enable live integrations

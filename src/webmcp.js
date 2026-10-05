@@ -5,10 +5,11 @@
  * so any WebMCP-capable AI agent (Chrome 146+) can invoke it from a web page.
  *
  * Tools registered:
- *   - triadAdjudicate      : run the 3-agent debate, return decision + dissent map
- *   - triadCreateOrder     : create a PayPal order for an APPROVED purchase
+ *   - triadAdjudicate      : run the 3-agent debate, return decision + dissent map + receipt
+ *   - triadCreateOrder     : create a PayPal order for an APPROVED purchase (stamps receipt hash)
  *   - triadCaptureOrder    : capture (finalize) an approved order
  *   - triadGetLedger       : inspect all adjudications (transparency)
+ *   - triadVerifyReceipt   : verify the custom_id audit trail was not tampered with
  *
  * The key idea: a website can let an agent *propose* a purchase, but the purchase
  * only settles if three independent agents reach consensus. Consensus is visible;
@@ -18,6 +19,7 @@
 import { TriadRunner } from './runner.js';
 import { adjudicate, DECISION, buildDissentMap } from './triad.js';
 import { PayPalClient } from '../paypal/client.js';
+import { buildReceipt, receiptCustomId, verifyReceipt, hashFromCustomId } from './receipt.js';
 
 /**
  * @param {object} deps
@@ -54,16 +56,34 @@ export function createTriad({ runner, paypal } = {}) {
     result.engine = args.engine;
     result.paypalMode = _paypal.mode;
 
+    // ★ Consensus receipt — decision + all three votes + reasoning fingerprints,
+    //   hashed into a tamper-evident audit record. This is what gets stamped
+    //   into the PayPal order's custom_id, so the payment record IS the audit trail.
+    const receipt = buildReceipt(result, { engine: args.engine });
+    result.receipt = receipt;
+    receipt.customId = receiptCustomId(receipt); // e.g. triad1:5f0cb4a5d19d7be3
+    result.audit = {
+      customId: receipt.customId,
+      hash: receipt.hash,
+      verify: verifyReceipt(receipt),
+    };
+
     ledger.push({
-      at: new Date().toISOString(),
+      at: receipt.at,
       purchase: result.purchase,
       decision: result.decision,
       votesFor: result.votesFor,
       votesAgainst: result.votesAgainst,
       summary: result.dissentMap?.summary ?? 'consensus reached',
+      receiptHash: receipt.hash,
+      customId: receipt.customId,
     });
 
-    pendingOrders.set(result.purchase.id, { decision: result.decision, purchase: result.purchase });
+    pendingOrders.set(result.purchase.id, {
+      decision: result.decision,
+      purchase: result.purchase,
+      receipt,
+    });
     return result;
   }
 
@@ -71,6 +91,7 @@ export function createTriad({ runner, paypal } = {}) {
     const entry = pendingOrders.get(purchaseId);
     if (!entry) return { ok: false, error: 'purchase_not_found' };
     if (entry.decision === DECISION.DENIED || entry.decision === DECISION.DISSENT) {
+      // ★ The money gate: a non-consensus adjudication cannot mint an order.
       return {
         ok: false,
         error: 'not_approved',
@@ -78,14 +99,62 @@ export function createTriad({ runner, paypal } = {}) {
         note: 'The three agents did not reach consensus. A human must override explicitly.',
       };
     }
-    const order = await _paypal.createOrder(entry.purchase, { returnUrl, cancelUrl });
+
+    // ★ Stamp the consensus receipt hash into the PayPal order's custom_id.
+    //   The order carries the audit trail with it: custom_id → triad ledger entry.
+    const receipt = entry.receipt;
+    const purchase = {
+      ...entry.purchase,
+      customId: receipt?.customId || entry.purchase.customId || entry.purchase.id,
+    };
+    const order = await _paypal.createOrder(purchase, { returnUrl, cancelUrl });
     entry.order = order;
+
+    const orderCustomId =
+      order.purchase_units?.[0]?.custom_id ?? purchase.customId;
+
     return {
       ok: true,
       decision: entry.decision,
       orderId: order.id,
       approvalLink: order.links?.find(l => l.rel === 'approve')?.href ?? null,
       mode: _paypal.mode,
+      audit: receipt
+        ? {
+            hash: receipt.hash,
+            customId: orderCustomId,
+            stamped: orderCustomId === receipt.customId,
+            verify: verifyReceipt(receipt),
+          }
+        : null,
+    };
+  }
+
+  /**
+   * 改ざん検知 — order の custom_id に刻んだ指紋が、ledger の receipt と一致するか。
+   * PayPal から order を引き直し、custom_id を照合して監査証跡を検証する。
+   */
+  async function triadVerifyReceipt({ orderId, purchaseId } = {}) {
+    let entry = purchaseId ? pendingOrders.get(purchaseId) : null;
+    if (!entry && orderId) {
+      entry = [...pendingOrders.values()].find((e) => e.order?.id === orderId) || null;
+    }
+    const receipt = entry?.receipt;
+    if (!receipt) return { ok: false, error: 'receipt_not_found' };
+
+    const customId = entry.order?.purchase_units?.[0]?.custom_id ?? receipt.customId;
+    const onChain = hashFromCustomId(customId);
+    const intact = verifyReceipt(receipt);
+    return {
+      ok: intact && onChain === receipt.hash,
+      decision: entry.decision,
+      customId,
+      orderHash: onChain,
+      ledgerHash: receipt.hash,
+      hashMatches: onChain === receipt.hash,
+      receiptIntact: intact,
+      votes: receipt.votes,
+      models: receipt.models,
     };
   }
 
@@ -99,7 +168,17 @@ export function createTriad({ runner, paypal } = {}) {
     return { count: ledger.length, entries: ledger };
   }
 
-  return { triadAdjudicate, triadCreateOrder, triadCaptureOrder, triadGetLedger, _runner, _paypal, ledger };
+  return {
+    triadAdjudicate,
+    triadCreateOrder,
+    triadCaptureOrder,
+    triadVerifyReceipt,
+    triadGetLedger,
+    _runner,
+    _paypal,
+    ledger,
+    pendingOrders,
+  };
 }
 
 /**
@@ -163,12 +242,27 @@ export function registerTriadWebMCP(triad = createTriad()) {
 
   mc.registerTool({
     name: 'triadGetLedger',
-    description: 'Read-only: list every purchase adjudication TRIAD has made, with decision and vote counts.',
+    description: 'Read-only: list every purchase adjudication TRIAD has made, with decision, vote counts, and consensus receipt hash.',
     inputSchema: { type: 'object', properties: {} },
     annotations: { readOnlyHint: true },
     execute: async () => triad.triadGetLedger(),
   });
 
-  console.log('[TRIAD] Registered 4 WebMCP tools: triadAdjudicate, triadCreateOrder, triadCaptureOrder, triadGetLedger');
+  mc.registerTool({
+    name: 'triadVerifyReceipt',
+    description:
+      'Read-only: verify the tamper-evident audit trail of an approved purchase. Re-hashes the consensus receipt and checks it matches the hash stamped into the PayPal order custom_id. Returns the three votes and the models that cast them. Use this to prove a payment record has not been altered.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        orderId: { type: 'string', description: 'PayPal order id' },
+        purchaseId: { type: 'string', description: 'Or the purchaseId from triadAdjudicate' },
+      },
+    },
+    annotations: { readOnlyHint: true },
+    execute: async (input) => triad.triadVerifyReceipt(input || {}),
+  });
+
+  console.log('[TRIAD] Registered 5 WebMCP tools: triadAdjudicate, triadCreateOrder, triadCaptureOrder, triadGetLedger, triadVerifyReceipt');
   return triad;
 }

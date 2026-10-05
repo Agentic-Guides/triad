@@ -70,7 +70,7 @@ export class PayPalClient {
         {
           amount: { currency_code: currency, value: Number(purchase.amount).toFixed(2) },
           description: `${purchase.category}: ${purchase.reason}`.slice(0, 127),
-          custom_id: purchase.id || `triad_${Date.now()}`,
+          custom_id: purchase.customId || purchase.id || `triad_${Date.now()}`,
         },
       ],
       application_context: {
@@ -114,8 +114,9 @@ export class PayPalClient {
   _mockResponse(method, path, body) {
     const id = `MOCK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
     if (path.includes('/capture')) {
+      const orderId = path.split('/')[4];
       return {
-        id: path.split('/')[3],
+        id: orderId,
         status: 'COMPLETED',
         mock: true,
         purchase_units: [{ payments: { captures: [{ id, status: 'COMPLETED' }] } }],
@@ -126,6 +127,7 @@ export class PayPalClient {
       id,
       status: method === 'POST' ? 'CREATED' : 'APPROVED',
       mock: true,
+      purchase_units: [{ custom_id: body?.purchase_units?.[0]?.custom_id ?? null }],
       links: [
         { rel: 'approve', href: `https://www.sandbox.paypal.com/checkoutnow?token=${id}` },
         { rel: 'self', href: `${this.base}${path}` },

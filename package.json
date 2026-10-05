@@ -5,7 +5,10 @@
   "type": "module",
   "main": "src/webmcp.js",
   "scripts": {
-    "test": "node test_triad.mjs",
+    "start": "node demo/server.mjs",
+    "test": "node tests/moneyGate.test.js && node test_triad.mjs",
+    "test:gate": "node tests/moneyGate.test.js",
+    "test:smoke": "bash tests/smoke.sh",
     "demo": "node demo/server.mjs"
   },
   "keywords": ["paypal", "webmcp", "agentic-commerce", "multi-agent", "ai"],
