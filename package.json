@@ -1,0 +1,14 @@
+{
+  "name": "triad",
+  "version": "1.0.0",
+  "description": "TRIAD — adversarial multi-agent governance for PayPal agentic commerce. Three independent AI agents debate a purchase; money only moves on consensus.",
+  "type": "module",
+  "main": "src/webmcp.js",
+  "scripts": {
+    "test": "node test_triad.mjs",
+    "demo": "node demo/server.mjs"
+  },
+  "keywords": ["paypal", "webmcp", "agentic-commerce", "multi-agent", "ai"],
+  "license": "MIT",
+  "engines": { "node": ">=18" }
+}

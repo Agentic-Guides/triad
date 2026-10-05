@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TRIAD — Adversarial AI Governance for Agentic Commerce</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/styles/ag-grid.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/styles/ag-theme-quartz-dark.css">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/dist/ag-grid-community.min.noStyle.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0b0f; --panel: #14161d; --line: #232733;
+    --adv: #4ade80; --aud: #f87171; --wit: #60a5fa;
+    --gold: #fbbf24; --dim: #7c8698; --txt: #e7ebf3;
+  }
+  body { background: var(--bg); color: var(--txt); font: 15px/1.5 -apple-system, "Segoe UI", sans-serif; min-height: 100vh; padding: 24px; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 24px; }
+  h1 { font-size: 34px; letter-spacing: 3px; font-weight: 800;
+       background: linear-gradient(90deg, var(--adv), var(--wit), var(--aud));
+       -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .sub { color: var(--dim); font-size: 13px; margin-top: 6px; }
+  .tags { margin-top:10px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
+  .tag { font-size:11px; color:var(--gold); border:1px solid #3a3320; background:#1c1a10; padding:2px 8px; border-radius:99px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 18px; }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--dim); margin-bottom: 14px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .agent { background: #0f1116; border-radius: 10px; padding: 16px; border: 1px solid var(--line); }
+  .agent.advocate { border-top: 3px solid var(--adv); }
+  .agent.auditor { border-top: 3px solid var(--aud); }
+  .agent.witness { border-top: 3px solid var(--wit); }
+  .agent h3 { font-size: 15px; margin-bottom: 2px; }
+  .agent .role { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+  .verdict { display:inline-block; margin-top:10px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:6px; text-transform:uppercase; }
+  .v-for { background:#0d2a18; color:var(--adv); }
+  .v-against { background:#2a0d0d; color:var(--aud); }
+  .v-neutral { background:#0d1f2a; color:var(--wit); }
+  .reasons { margin-top: 12px; font-size: 13px; color: #b7c0d0; }
+  .reasons li { margin: 6px 0 6px 16px; }
+  .conf { margin-top:10px; font-size:11px; color:var(--dim); }
+  input, select { width: 100%; background:#0f1116; border:1px solid var(--line); color:var(--txt);
+                  padding:11px 13px; border-radius:9px; font-size:14px; outline:none; }
+  input:focus { border-color:#3b4459; }
+  label { display:block; font-size:11px; color:var(--dim); margin-bottom:5px; text-transform:uppercase; letter-spacing:.8px; }
+  .field { margin-bottom: 12px; }
+  button { width:100%; margin-top:6px; padding:13px; border:none; border-radius:9px; font-size:15px; font-weight:700;
+           background: linear-gradient(90deg,#f59e0b,#fbbf24); color:#1a1405; cursor:pointer; letter-spacing:.5px; }
+  button:hover { filter: brightness(1.08); }
+  button:disabled { opacity:.5; cursor:wait; }
+  button.secondary { background:#1c202b; color:var(--txt); }
+  .decision { text-align:center; padding:20px; border-radius:12px; margin-bottom:16px; }
+  .d-APPROVED { background:#0d2a18; border:1px solid #1d5c34; }
+  .d-CONDITIONAL { background:#2a240d; border:1px solid #5c4a1d; }
+  .d-DENIED { background:#2a0d0d; border:1px solid #5c1d1d; }
+  .d-DISSENT { background:#2a1a0d; border:1px solid #5c3a1d; }
+  .decision .big { font-size:26px; font-weight:800; letter-spacing:2px; }
+  .vote { color:var(--dim); font-size:12px; margin-top:6px; }
+  .map { background:#0f1116; border-left:3px solid var(--gold); padding:14px; border-radius:8px; margin-top:12px; }
+  .map h4 { font-size:12px; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+  .map-row { font-size:13px; margin:6px 0; }
+  .pill { font-size:10px; padding:2px 7px; border-radius:99px; background:#1c202b; color:var(--dim); }
+  .hidden { display:none; }
+  a { color: var(--gold); }
+  .tabbar { display:flex; gap:6px; margin-bottom:16px; }
+  .tab { padding:8px 16px; border-radius:8px; background:#1c202b; color:var(--dim); cursor:pointer; font-size:13px; font-weight:600; }
+  .tab.active { background:#fbbf24; color:#1a1405; }
+  #candidateGrid, #ledgerGrid { width:100%; height:320px; }
+  /* Force dark theme (robust across AG Grid versions) */
+  .ag-theme-quartz-dark, .ag-theme-quartz-dark .ag-root-wrapper { background:#0f1116; }
+  .ag-theme-quartz-dark .ag-header { background:#161a22 !important; border-bottom:1px solid var(--line); }
+  .ag-theme-quartz-dark .ag-header-cell, .ag-theme-quartz-dark .ag-header-group-cell { color:var(--dim) !important; font-weight:600; }
+  .ag-theme-quartz-dark .ag-row { background:#0f1116 !important; color:var(--txt) !important; border-color:#1a1e27 !important; }
+  .ag-theme-quartz-dark .ag-row-odd { background:#12151c !important; }
+  .ag-theme-quartz-dark .ag-row:hover { background:#1a1f2b !important; }
+  .ag-theme-quartz-dark .ag-cell { color:var(--txt) !important; }
+  .ag-theme-quartz-dark .ag-body, .ag-theme-quartz-dark .ag-center-cols-viewport,
+  .ag-theme-quartz-dark .ag-body-viewport { background:#0f1116 !important; }
+  .ag-theme-quartz-dark .ag-root-wrapper { border:1px solid var(--line) !important; border-radius:10px; }
+  .reco { background:#0d2a18; border:1px solid #1d5c34; border-radius:10px; padding:14px; margin-bottom:14px; }
+  .reco.cond { background:#2a240d; border-color:#5c4a1d; }
+  .reco .t { font-size:15px; font-weight:700; }
+  .reco .p { color:var(--gold); font-size:20px; font-weight:800; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>TRIAD</h1>
+    <div class="sub">Three independent AI agents debate your purchase. Money moves only on consensus.</div>
+    <div class="tags">
+      <span class="tag">PayPal Agentic Commerce</span>
+      <span class="tag">WebMCP</span>
+      <span class="tag">AG Grid</span>
+      <span class="tag">Channel3</span>
+    </div>
+  </header>
+
+  <div class="tabbar">
+    <div class="tab active" id="tabShop">🛒 Shop (Channel3 → Tribunal)</div>
+    <div class="tab" id="tabDirect">⚖️ Direct Adjudication</div>
+  </div>
+
+  <!-- SHOP MODE -->
+  <div id="shopMode">
+    <div class="panel">
+      <h2>Shop Request</h2>
+      <div class="grid2">
+        <div class="field"><label>Category</label><input id="category" value="audio" /></div>
+        <div class="field"><label>Monthly budget (USD)</label><input id="budget" type="number" value="800" /></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Already spent this month (USD)</label><input id="spent" type="number" value="120" /></div>
+        <div class="field"><label>Max price (USD)</label><input id="maxPrice" type="number" value="500" /></div>
+      </div>
+      <button id="shopBtn">🛒 Find products &amp; convene the Tribunal</button>
+    </div>
+
+    <div id="shopResult" class="hidden">
+      <div id="reco"></div>
+      <div class="panel">
+        <h2>Candidate Products — evaluated by the Tribunal (AG Grid)</h2>
+        <div id="candidateGrid" class="ag-theme-quartz-dark"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIRECT MODE -->
+  <div id="directMode" class="hidden">
+    <div class="panel">
+      <h2>Direct Purchase</h2>
+      <div class="grid2">
+        <div class="field"><label>What are you buying?</label><input id="d_category" value="Noise-cancelling headphones" /></div>
+        <div class="field"><label>Amount (USD)</label><input id="d_amount" type="number" value="299" /></div>
+      </div>
+      <div class="field"><label>Why?</label><input id="d_reason" value="I work in an open office and can't focus" /></div>
+      <div class="grid2">
+        <div class="field"><label>Monthly budget (USD)</label><input id="d_budget" type="number" value="800" /></div>
+        <div class="field"><label>Already spent (USD)</label><input id="d_spent" type="number" value="120" /></div>
+      </div>
+      <button id="run">⚖️ Convene the Tribunal</button>
+    </div>
+
+    <div id="result" class="hidden">
+      <div id="decision" class="decision"><div class="big"></div><div class="vote"></div></div>
+      <div class="panel"><h2>The Debate</h2><div class="grid3" id="agents"></div></div>
+      <div id="dissentWrap" class="hidden panel"><h2>Dissent Map</h2><div id="dissent"></div></div>
+      <div id="paypalWrap" class="hidden panel"><h2>PayPal Settlement</h2><div id="paypal"></div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Ledger <span class="pill" id="ledgerCount">0</span></h2>
+    <div id="ledgerGrid" class="ag-theme-quartz-dark"></div>
+  </div>
+</div>
+
+<script>
+let candidateGridApi, ledgerGridApi;
+
+async function api(path, body) {
+  const r = await fetch(path, { method: body ? 'POST' : 'GET', headers: {'Content-Type':'application/json'}, body: body ? JSON.stringify(body) : undefined });
+  return r.json();
+}
+const vc = v => v==='for'?'v-for':v==='against'?'v-against':'v-neutral';
+
+function renderAgent(a) {
+  if (!a) return '';
+  return `<div class="agent ${a.agent}">
+    <h3>${a.title}</h3><div class="role">${a.agent} · ${a.model}</div>
+    <span class="verdict ${vc(a.verdict)}">${a.verdict}</span>
+    <ul class="reasons">${(a.reasons||[]).map(r=>`<li>${r}</li>`).join('')}</ul>
+    ${a.conditions?`<div class="conf">⚑ ${a.conditions}</div>`:''}
+    <div class="conf">confidence ${(a.confidence*100).toFixed(0)}%</div></div>`;
+}
+
+// --- AG Grid: candidate comparison ---
+function initCandidateGrid() {
+  candidateGridApi = agGrid.createGrid(document.getElementById('candidateGrid'), {
+    columnDefs: [
+      { field: 'title', headerName: 'Product', flex: 3 },
+      { field: 'brand', headerName: 'Brand', flex: 1 },
+      { field: 'price', headerName: 'Price', flex: 1,
+        valueFormatter: p => '$' + Number(p.value).toLocaleString() },
+      { field: 'rating', headerName: 'Rating', flex: 1 },
+      { field: 'decision', headerName: 'Tribunal', flex: 1.2,
+        cellStyle: p => ({ fontWeight:'700',
+          color: p.value==='APPROVED'?'#4ade80':p.value==='DENIED'?'#f87171':p.value==='CONDITIONAL'?'#fbbf24':'#60a5fa' }) },
+    ],
+    rowData: [],
+    defaultColDef: { sortable: true, filter: true, resizable: true },
+
+  });
+}
+
+// --- AG Grid: ledger ---
+function initLedgerGrid() {
+  ledgerGridApi = agGrid.createGrid(document.getElementById('ledgerGrid'), {
+    columnDefs: [
+      { field: 'at', headerName: 'Time', flex: 1.4,
+        valueFormatter: p => new Date(p.value).toLocaleTimeString() },
+      { field: 'category', headerName: 'Item', flex: 2 },
+      { field: 'amount', headerName: 'Amount', flex: 1,
+        valueFormatter: p => '$' + Number(p.value).toLocaleString() },
+      { field: 'decision', headerName: 'Decision', flex: 1.2,
+        cellStyle: p => ({ fontWeight:'700',
+          color: p.value==='APPROVED'?'#4ade80':p.value==='DENIED'?'#f87171':p.value==='CONDITIONAL'?'#fbbf24':'#60a5fa' }) },
+      { field: 'summary', headerName: 'Consensus / Dissent', flex: 3 },
+    ],
+    rowData: [],
+    defaultColDef: { sortable: true, filter: true, resizable: true },
+
+  });
+}
+
+async function refreshLedger() {
+  const l = await api('/api/ledger');
+  document.getElementById('ledgerCount').textContent = l.count;
+  const rows = l.entries.map(e => ({
+    at: e.at, category: e.purchase.category, amount: e.purchase.amount,
+    decision: e.decision, summary: e.summary,
+  })).reverse();
+  if (ledgerGridApi) ledgerGridApi.setGridOption('rowData', rows);
+}
+
+// --- Tabs ---
+document.getElementById('tabShop').onclick = () => {
+  document.getElementById('tabShop').classList.add('active');
+  document.getElementById('tabDirect').classList.remove('active');
+  document.getElementById('shopMode').classList.remove('hidden');
+  document.getElementById('directMode').classList.add('hidden');
+};
+document.getElementById('tabDirect').onclick = () => {
+  document.getElementById('tabDirect').classList.add('active');
+  document.getElementById('tabShop').classList.remove('active');
+  document.getElementById('directMode').classList.remove('hidden');
+  document.getElementById('shopMode').classList.add('hidden');
+};
+
+// --- Shop flow ---
+document.getElementById('shopBtn').onclick = async () => {
+  const btn = document.getElementById('shopBtn'); btn.disabled = true; btn.textContent = 'Channel3 searching → Tribunal deliberating…';
+  const body = {
+    category: document.getElementById('category').value,
+    monthlyBudget: Number(document.getElementById('budget').value),
+    spentThisMonth: Number(document.getElementById('spent').value),
+    maxPrice: Number(document.getElementById('maxPrice').value),
+  };
+  const r = await api('/api/shop', body);
+  document.getElementById('shopResult').classList.remove('hidden');
+
+  const reco = document.getElementById('reco');
+  if (r.ok && r.recommendation) {
+    const pr = r.recommendation.product;
+    reco.innerHTML = `<div class="reco ${r.recommendation.decision==='CONDITIONAL'?'cond':''}">
+      <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px">Tribunal Consensus — ${r.recommendation.decision}</div>
+      <div class="t">${pr.title} <span style="color:var(--dim);font-weight:400">· ${pr.brand}</span></div>
+      <div class="p">$${Number(pr.price).toLocaleString()} <span style="font-size:12px;color:var(--dim)">★${pr.rating}</span></div>
+      <div style="font-size:12px;color:var(--dim);margin-top:6px">${r.candidates} candidates · ${r.evaluated} evaluated · catalog: ${r.catalogMode}</div>
+    </div>`;
+  } else {
+    reco.innerHTML = `<div class="reco cond"><div class="t">No consensus</div>
+      <div style="font-size:13px;color:var(--dim);margin-top:6px">${r.message||'No candidate approved.'}</div></div>`;
+  }
+
+  if (candidateGridApi) candidateGridApi.setGridOption('rowData', r.allResults || []);
+  await refreshLedger();
+  btn.disabled = false; btn.textContent = '🛒 Find products & convene the Tribunal';
+};
+
+// --- Direct flow ---
+document.getElementById('run').onclick = async () => {
+  const btn = document.getElementById('run'); btn.disabled = true; btn.textContent = 'Agents deliberating…';
+  const body = {
+    category: document.getElementById('d_category').value,
+    amount: Number(document.getElementById('d_amount').value),
+    reason: document.getElementById('d_reason').value,
+    monthlyBudget: Number(document.getElementById('d_budget').value),
+    spentThisMonth: Number(document.getElementById('d_spent').value),
+  };
+  const r = await api('/api/adjudicate', body);
+  document.getElementById('result').classList.remove('hidden');
+  const d = document.getElementById('decision');
+  d.className = 'decision d-' + r.decision;
+  d.querySelector('.big').textContent = r.decision;
+  d.querySelector('.vote').textContent = `${r.votesFor} for · ${r.votesAgainst} against (threshold ${r.threshold}) · engine: ${r.engine} · PayPal: ${r.paypalMode}`;
+  document.getElementById('agents').innerHTML =
+    renderAgent(r.arguments.advocate) + renderAgent(r.arguments.auditor) + renderAgent(r.arguments.witness);
+
+  const dw = document.getElementById('dissentWrap');
+  if (r.dissentMap) {
+    dw.classList.remove('hidden');
+    document.getElementById('dissent').innerHTML = r.dissentMap.entries.map(e =>
+      `<div class="map"><h4>${e.title} → ${e.verdict}</h4>
+        ${e.allReasons.map(x=>`<div class="map-row">• ${x}</div>`).join('')}
+        ${e.conditions?`<div class="map-row"><b>Condition:</b> ${e.conditions}</div>`:''}</div>`).join('');
+  } else { dw.classList.add('hidden'); }
+
+  const pw = document.getElementById('paypalWrap');
+  if (r.decision === 'APPROVED' || r.decision === 'CONDITIONAL') {
+    const o = await api('/api/order', { purchaseId: r.purchase.id, returnUrl:'https://example.com/return', cancelUrl:'https://example.com/cancel' });
+    let capHtml = '';
+    if (o.ok) { const c = await api('/api/capture', { orderId: o.orderId });
+      capHtml = `<div class="map-row">✓ Captured: <b>${c.capture?.status}</b> (order ${o.orderId}) · mode ${c.mode}</div>`; }
+    pw.classList.remove('hidden');
+    document.getElementById('paypal').innerHTML = `
+      <div class="map-row">Order: <b>${o.orderId||o.error}</b> · mode <b>${o.mode||'-'}</b></div>
+      ${o.approvalLink?`<div class="map-row">Approval: <a href="${o.approvalLink}" target="_blank">${o.approvalLink}</a></div>`:''}
+      ${capHtml}
+      <div class="map-row" style="color:var(--dim)">Money moves only after the human approves — agents propose, never settle.</div>`;
+  } else { pw.classList.add('hidden'); }
+
+  await refreshLedger();
+  btn.disabled = false; btn.textContent = '⚖️ Convene the Tribunal';
+};
+
+// Init
+initCandidateGrid();
+initLedgerGrid();
+refreshLedger();
+</script>
+</body>
+</html>
