@@ -11,10 +11,13 @@ import { makeAgent, ROLES, deterministicReason, deterministicJudge } from './tri
 const DEFAULT_ENDPOINT = 'https://ollama.com/v1/chat/completions';
 
 // Distinct models per role → genuinely independent adversaries.
+// Independent models produce genuinely independent judgments. Three copies of the
+// same model share the same blind spots, which defeats the adversarial design.
+// Override any of these with TRIAD_MODEL_<ROLE> env vars.
 const DEFAULT_MODELS = {
-  advocate: 'deepseek-v4.1-flash',
-  auditor: 'deepseek-v4.1-flash',
-  witness: 'deepseek-v4.1-flash',
+  advocate: process.env.TRIAD_MODEL_ADVOCATE || 'deepseek-v4.1-flash',
+  auditor: process.env.TRIAD_MODEL_AUDITOR || 'qwen3-vl:latest',
+  witness: process.env.TRIAD_MODEL_WITNESS || 'llama4:latest',
 };
 
 export class TriadRunner {
