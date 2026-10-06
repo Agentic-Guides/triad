@@ -66,7 +66,28 @@
   .tabbar { display:flex; gap:6px; margin-bottom:16px; }
   .tab { padding:8px 16px; border-radius:8px; background:#1c202b; color:var(--dim); cursor:pointer; font-size:13px; font-weight:600; }
   .tab.active { background:#fbbf24; color:#1a1405; }
-  #candidateGrid, #ledgerGrid { width:100%; height:320px; }
+  #candidateGrid, #ledgerGrid, #auditGrid { width:100%; height:320px; }
+  /* ★ AG Grid dashboard — governance metrics */
+  #auditGrid { width:100%; height:360px; }
+  .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px; }
+  .metric { background:#0f1116; border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .metric .k { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; }
+  .metric .v { font-size:26px; font-weight:800; margin-top:4px; }
+  .metric .u { font-size:11px; color:var(--dim); }
+  .votechip { display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:6px; margin-right:3px; }
+  .vc-for { background:#0d2a18; color:var(--adv); }
+  .vc-against { background:#2a0d0d; color:var(--aud); }
+  .vc-neutral { background:#0d1f2a; color:var(--wit); }
+  .receipt { background:#0f1116; border:1px solid var(--line); border-radius:10px; padding:16px; margin-top:14px; }
+  .receipt h4 { font-size:12px; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+  .kv { display:grid; grid-template-columns:150px 1fr; gap:6px 12px; font-size:13px; }
+  .kv .k { color:var(--dim); }
+  .kv .v { font-family:ui-monospace,Menlo,Consolas,monospace; word-break:break-all; }
+  .ok { color:var(--adv); font-weight:700; }
+  .bad { color:var(--aud); font-weight:700; }
+  .verify-bar { display:flex; gap:10px; align-items:center; margin-top:12px; }
+  .verify-bar button { width:auto; padding:9px 16px; font-size:13px; margin:0; }
+  .verdict-line { font-size:13px; margin-top:8px; }
   /* Force dark theme (robust across AG Grid versions) */
   .ag-theme-quartz-dark, .ag-theme-quartz-dark .ag-root-wrapper { background:#0f1116; }
   .ag-theme-quartz-dark .ag-header { background:#161a22 !important; border-bottom:1px solid var(--line); }
@@ -150,9 +171,17 @@
     </div>
   </div>
 
+  <!-- ★ GOVERNANCE DASHBOARD (AG Grid is the product surface, not decoration) -->
   <div class="panel">
-    <h2>Ledger <span class="pill" id="ledgerCount">0</span></h2>
-    <div id="ledgerGrid" class="ag-theme-quartz-dark"></div>
+    <h2>Governance Dashboard — every decision, every vote, every hash (AG Grid)</h2>
+    <div class="metrics">
+      <div class="metric"><div class="k">Adjudications</div><div class="v" id="mTotal">0</div></div>
+      <div class="metric"><div class="k">Approved</div><div class="v ok" id="mApproved">0</div></div>
+      <div class="metric"><div class="k">Blocked by dissent</div><div class="v bad" id="mBlocked">0</div></div>
+      <div class="metric"><div class="k">Audit trail</div><div class="v" id="mIntact">—</div><div class="u" id="mIntactU">receipts intact</div></div>
+    </div>
+    <div id="auditGrid" class="ag-theme-quartz-dark"></div>
+    <div id="receiptWrap"></div>
   </div>
 </div>
 
@@ -194,35 +223,99 @@ function initCandidateGrid() {
   });
 }
 
-// --- AG Grid: ledger ---
+// --- ★ AG Grid: governance dashboard ledger ---
+function voteChips(votes) {
+  if (!votes) return '';
+  const cls = v => v==='for'?'vc-for':v==='against'?'vc-against':'vc-neutral';
+  return ['advocate','auditor','witness']
+    .map(a => votes[a] ? `<span class="votechip ${cls(votes[a])}">${a[0].toUpperCase()} ${votes[a]}</span>` : '')
+    .join('');
+}
+
 function initLedgerGrid() {
-  ledgerGridApi = agGrid.createGrid(document.getElementById('ledgerGrid'), {
+  ledgerGridApi = agGrid.createGrid(document.getElementById('auditGrid'), {
     columnDefs: [
-      { field: 'at', headerName: 'Time', flex: 1.4,
+      { field: 'at', headerName: 'Time', flex: 1.3,
         valueFormatter: p => new Date(p.value).toLocaleTimeString() },
-      { field: 'category', headerName: 'Item', flex: 2 },
-      { field: 'amount', headerName: 'Amount', flex: 1,
+      { field: 'category', headerName: 'Item', flex: 1.8 },
+      { field: 'amount', headerName: 'Amount', flex: 0.9,
         valueFormatter: p => '$' + Number(p.value).toLocaleString() },
-      { field: 'decision', headerName: 'Decision', flex: 1.2,
+      { field: 'decision', headerName: 'Decision', flex: 1.1,
         cellStyle: p => ({ fontWeight:'700',
           color: p.value==='APPROVED'?'#4ade80':p.value==='DENIED'?'#f87171':p.value==='CONDITIONAL'?'#fbbf24':'#60a5fa' }) },
-      { field: 'summary', headerName: 'Consensus / Dissent', flex: 3 },
+      { field: 'summary', headerName: 'Consensus / Dissent', flex: 2.6 },
+      { field: 'customId', headerName: 'Receipt (custom_id)', flex: 1.8,
+        cellStyle: () => ({ fontFamily:'ui-monospace,Menlo,Consolas,monospace', fontSize:'12px' }) },
     ],
     rowData: [],
     defaultColDef: { sortable: true, filter: true, resizable: true },
-
+    rowSelection: 'single',
+    onRowSelected: (e) => {
+      const row = e.api.getSelectedRows()[0];
+      if (row) showReceipt(row);
+    },
   });
+}
+
+// ★ Trust Receipt viewer — the audit trail made human-readable.
+function showReceipt(entry) {
+  const wrap = document.getElementById('receiptWrap');
+  if (!wrap) return;
+  const votes = entry.votes || {};
+  const models = entry.models || {};
+  const intact = entry.receiptIntact !== false;
+  const dissent = entry.dissentMap;
+  wrap.innerHTML = `
+    <div class="receipt">
+      <h4>Trust Receipt — ${entry.decision} · ${entry.category} · $${Number(entry.amount||0).toLocaleString()}</h4>
+      <div class="kv">
+        <div class="k">Receipt hash</div><div class="v">${entry.receiptHash || '—'}</div>
+        <div class="k">PayPal custom_id</div><div class="v">${entry.customId || '—'}</div>
+        <div class="k">Votes</div><div class="v">${voteChips(votes) || entry.summary}</div>
+        <div class="k">Models</div><div class="v">A: ${models.advocate||'—'} · B: ${models.auditor||'—'} · W: ${models.witness||'—'}</div>
+        <div class="k">Engine</div><div class="v">${entry.engine || '—'} · threshold ${entry.threshold ?? '—'}</div>
+        <div class="k">Integrity</div><div class="v ${intact?'ok':'bad'}">${intact ? '✓ receipt intact (re-hashed & matched)' : '✗ TAMPERED'}</div>
+      </div>
+      ${dissent ? `<div class="verdict-line" style="color:var(--gold)"><b>Dissent Map:</b> ${dissent.summary || ''}</div>` : ''}
+      <div class="verify-bar">
+        <button class="secondary" id="verifyBtn">🔐 Verify against PayPal (custom_id ↔ receipt)</button>
+        <span id="verifyOut" class="verdict-line"></span>
+      </div>
+    </div>`;
+  const vb = document.getElementById('verifyBtn');
+  if (vb) vb.onclick = async () => {
+    const out = document.getElementById('verifyOut');
+    out.textContent = 'verifying…';
+    const r = await api('/api/verify', { orderId: entry._orderId, purchaseId: entry._purchaseId });
+    out.innerHTML = r.ok
+      ? `<span class="ok">✓ verified</span> — hash matches PayPal order custom_id (${r.customId})`
+      : `<span class="bad">✗ ${r.error || 'not verified'}</span>`;
+  };
 }
 
 async function refreshLedger() {
   const l = await api('/api/ledger');
-  document.getElementById('ledgerCount').textContent = l.count;
   const rows = l.entries.map(e => ({
-    at: e.at, category: e.purchase.category, amount: e.purchase.amount,
-    decision: e.decision, summary: e.summary,
+    at: e.at, category: e.category ?? e.purchase?.category, amount: e.amount ?? e.purchase?.amount,
+    decision: e.decision, summary: e.summary, customId: e.customId, receiptHash: e.receiptHash,
+    votes: e.votes, models: e.models, engine: e.engine, threshold: e.threshold,
+    dissentMap: e.dissentMap, receiptIntact: e.receiptIntact,
+    _purchaseId: e.purchase?.id,
   })).reverse();
   if (ledgerGridApi) ledgerGridApi.setGridOption('rowData', rows);
+
+  // ★ Governance metrics
+  const total = rows.length;
+  const approved = rows.filter(r => r.decision === 'APPROVED' || r.decision === 'CONDITIONAL').length;
+  const blocked = rows.filter(r => r.decision === 'DENIED' || r.decision === 'DISSENT').length;
+  const intact = rows.filter(r => r.receiptIntact !== false).length;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('mTotal', total); set('mApproved', approved); set('mBlocked', blocked);
+  set('mIntact', total ? `${intact}/${total}` : '—');
+  const u = document.getElementById('mIntactU');
+  if (u) u.textContent = total && intact === total ? 'all receipts intact' : 'receipts intact';
 }
+
 
 // --- Tabs ---
 document.getElementById('tabShop').onclick = () => {

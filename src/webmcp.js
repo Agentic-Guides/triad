@@ -77,6 +77,16 @@ export function createTriad({ runner, paypal } = {}) {
       summary: result.dissentMap?.summary ?? 'consensus reached',
       receiptHash: receipt.hash,
       customId: receipt.customId,
+      // ★ Rich audit fields for the AG Grid governance dashboard.
+      //   Everything an auditor needs to reconstruct WHY this decision happened.
+      votes: receipt.votes,                       // { advocate:'for', auditor:'against', witness:'neutral' }
+      models: receipt.models,                     // { advocate:'deepseek...', auditor:'...', witness:'...' }
+      engine: receipt.engine || args.engine,
+      threshold: result.threshold,
+      amount: result.purchase.amount,
+      category: result.purchase.category,
+      dissentMap: result.dissentMap ?? null,
+      receiptIntact: verifyReceipt(receipt),
     });
 
     pendingOrders.set(result.purchase.id, {
