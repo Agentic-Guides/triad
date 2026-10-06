@@ -119,6 +119,30 @@ node tests/moneyGate.test.js   # asserts createOrder is called 0 times on DENIED
 
 Most "AI spending" demos prove that an agent *can* buy. TRIAD proves that it *cannot* — unless three independent agents agree. That asymmetry is the point.
 
+### Proven against the real PayPal sandbox
+
+The claim above is not proven against a mock. It is proven against **PayPal itself**:
+
+```bash
+PAYPAL_CLIENT_ID=... PAYPAL_CLIENT_SECRET=... node tests/paypalSandbox.live.mjs
+```
+
+```
+token OK (expires_in=30566, app_id=APP-3C860634L8444660B)
+receipt hash: 40afacbb8ff165b6 -> custom_id: triad1:40afacbb8ff165b6
+order OK id=9WF514175M434994P status=CREATED
+round-trip custom_id=triad1:40afacbb8ff165b6 MATCH=true
+disputes v1 reachable: OK
+ALL LIVE PAYPAL SANDBOX CHECKS PASSED
+```
+
+It performs five things against the live sandbox API: (1) OAuth token, (2) a consensus
+receipt hash, (3) a **real PayPal order** carrying that hash in `custom_id`,
+(4) a re-fetch proving the stamp survived the round-trip, and (5) a Disputes v1 scope check.
+Judges can reproduce this with the sandbox credentials in `SETUP.md`.
+
+> Sandbox credentials are public-safe (test money only). Never commit live credentials.
+
 ## WebMCP Tools
 
 | Tool | Purpose |
