@@ -7,6 +7,10 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/styles/ag-grid.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/styles/ag-theme-quartz-dark.css">
 <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/dist/ag-grid-community.min.noStyle.js"></script>
+<!-- ★ Bryntum Scheduler (trial) — audit timeline. Pinned version; CDN so deps stay zero. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@bryntum/scheduler-trial@7.3.6/scheduler.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@bryntum/scheduler-trial@7.3.6/stockholm-dark.css">
+<script src="https://cdn.jsdelivr.net/npm/@bryntum/scheduler-trial@7.3.6/scheduler.umd.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -88,6 +92,8 @@
   .verify-bar { display:flex; gap:10px; align-items:center; margin-top:12px; }
   .verify-bar button { width:auto; padding:9px 16px; font-size:13px; margin:0; }
   .verdict-line { font-size:13px; margin-top:8px; }
+  /* ★ Bryntum dispute-triage flag: unresolved case = must not be missed */
+  .b-sch-event.triage-flag { outline:2px solid #fbbf24; outline-offset:1px; box-shadow:0 0 10px rgba(251,191,36,.55); }
   /* Force dark theme (robust across AG Grid versions) */
   .ag-theme-quartz-dark, .ag-theme-quartz-dark .ag-root-wrapper { background:#0f1116; }
   .ag-theme-quartz-dark .ag-header { background:#161a22 !important; border-bottom:1px solid var(--line); }
@@ -121,6 +127,7 @@
   <div class="tabbar">
     <div class="tab active" id="tabShop">🛒 Shop (Channel3 → Tribunal)</div>
     <div class="tab" id="tabDirect">⚖️ Direct Adjudication</div>
+    <div class="tab" id="tabTimeline">📅 Audit Timeline (Bryntum)</div>
   </div>
 
   <!-- SHOP MODE -->
@@ -168,6 +175,24 @@
       <div class="panel"><h2>The Debate</h2><div class="grid3" id="agents"></div></div>
       <div id="dissentWrap" class="hidden panel"><h2>Dissent Map</h2><div id="dissent"></div></div>
       <div id="paypalWrap" class="hidden panel"><h2>PayPal Settlement</h2><div id="paypal"></div></div>
+    </div>
+  </div>
+
+  <!-- ★ TIMELINE MODE (Bryntum Scheduler — the audit trail on a time axis) -->
+  <div id="timelineMode" class="hidden">
+    <div class="panel">
+      <h2>Audit Timeline — who voted what, when, and which disputes are still open (Bryntum)</h2>
+      <div class="metrics">
+        <div class="metric"><div class="k">Timeline rows</div><div class="v">3</div><div class="u">Advocate · Auditor · Witness</div></div>
+        <div class="metric"><div class="k">Open disputes</div><div class="v bad" id="tlOpen">0</div><div class="u">DENIED/DISSENT, unresolved</div></div>
+        <div class="metric"><div class="k">Evidence ready</div><div class="v ok" id="tlEvidence">0</div><div class="u">receipt hash present</div></div>
+        <div class="metric"><div class="k">Window</div><div class="v" style="font-size:15px">last 24h</div><div class="u">rolling</div></div>
+      </div>
+      <div id="scheduler" style="height:420px;border-radius:10px;overflow:hidden"></div>
+      <div class="verdict-line" style="color:var(--dim)">
+        Each bar is one agent's vote on one purchase. Red = blocked it, green = approved it, blue = neutral.
+        Cases still unresolved appear flagged — the same idea as a dispute-triage board.
+      </div>
     </div>
   </div>
 
@@ -295,6 +320,7 @@ function showReceipt(entry) {
 
 async function refreshLedger() {
   const l = await api('/api/ledger');
+  __ledger = l.entries || [];   // ★ feed the Bryntum timeline
   const rows = l.entries.map(e => ({
     at: e.at, category: e.category ?? e.purchase?.category, amount: e.amount ?? e.purchase?.amount,
     decision: e.decision, summary: e.summary, customId: e.customId, receiptHash: e.receiptHash,
@@ -317,19 +343,94 @@ async function refreshLedger() {
 }
 
 
-// --- Tabs ---
-document.getElementById('tabShop').onclick = () => {
-  document.getElementById('tabShop').classList.add('active');
-  document.getElementById('tabDirect').classList.remove('active');
-  document.getElementById('shopMode').classList.remove('hidden');
-  document.getElementById('directMode').classList.add('hidden');
-};
-document.getElementById('tabDirect').onclick = () => {
-  document.getElementById('tabDirect').classList.add('active');
-  document.getElementById('tabShop').classList.remove('active');
-  document.getElementById('directMode').classList.remove('hidden');
-  document.getElementById('shopMode').classList.add('hidden');
-};
+// --- ★ Bryntum: audit timeline ---
+let schedulerInst = null;
+let __ledger = [];
+
+// Pure transform: ledger entries -> Bryntum resources + events.
+// 1 row = one agent. Each bar = that agent's vote on one purchase, at the time it voted.
+function ledgerToSchedulerData(entries) {
+  const AGENTS = [
+    { id: 'advocate', name: 'Advocate' },
+    { id: 'auditor',  name: 'Auditor'  },
+    { id: 'witness',  name: 'Witness'  },
+  ];
+  const events = [];
+  for (const e of entries) {
+    const votes = e.votes || {};
+    const at = new Date(e.at);
+    const end = new Date(at.getTime() + 1000 * 60 * 20); // 20-min deliberation block
+    const stamp = e.receiptHash ? e.receiptHash.slice(0, 8) : '—';
+    // ★ Dispute triage: a DENIED/DISSENT case that has not been resolved yet.
+    const unresolved = (e.decision === 'DENIED' || e.decision === 'DISSENT');
+    for (const a of AGENTS) {
+      const verdict = votes[a.id];          // 'for' | 'against' | 'neutral'
+      if (!verdict) continue;
+      events.push({
+        id: `${e.receiptHash || e.at}-${a.id}`,
+        resourceId: a.id,
+        name: `${a.name} · ${verdict} · $${Number(e.amount || 0).toLocaleString()}`,
+        startDate: at,
+        endDate: end,
+        eventColor: verdict === 'for' ? 'green' : verdict === 'against' ? 'red' : 'blue',
+        cls: unresolved ? 'triage-flag' : '',
+        evidence: `receipt ${stamp}`,
+        decision: e.decision,
+      });
+    }
+  }
+  events.sort((x, y) => x.startDate - y.startDate);
+  return { resources: AGENTS, events };
+}
+
+function initScheduler() {
+  const host = document.getElementById('scheduler');
+  if (!host) return;
+  // CDN unreachable (or already built) → the rest of the demo still works.
+  if (typeof bryntum === 'undefined' || !bryntum.scheduler) {
+    host.innerHTML = '<div style="padding:20px;color:#7c8698">Bryntum Scheduler unavailable (CDN blocked). The rest of the demo is unaffected.</div>';
+    return;
+  }
+  const { resources, events } = ledgerToSchedulerData(__ledger);
+
+  // Metrics for the timeline panel.
+  const open = __ledger.filter(e => e.decision === 'DENIED' || e.decision === 'DISSENT').length;
+  const evid = __ledger.filter(e => e.receiptHash).length;
+  const so = document.getElementById('tlOpen');   if (so) so.textContent = open;
+  const se = document.getElementById('tlEvidence'); if (se) se.textContent = evid;
+
+  if (schedulerInst) { schedulerInst.destroy(); schedulerInst = null; }
+
+  const now = Date.now();
+  schedulerInst = new bryntum.scheduler.Scheduler({
+    appendTo: host,
+    startDate: new Date(now - 6 * 3600e3),
+    endDate: new Date(now + 6 * 3600e3),
+    viewPreset: 'hourAndDay',
+    rowHeight: 54,
+    barMargin: 6,
+    columns: [{ field: 'name', text: 'Agent', width: 150 }],
+    resources,
+    events,
+    eventStyle: 'colored',
+    bar: { template: d => `<b>${d.eventRecord.name}</b> <span style="opacity:.8">${d.eventRecord.evidence || ''}</span>` },
+    features: { timeRanges: { showCurrentTimeLine: true } },
+  });
+}
+
+function showTab(which) {
+  const map = { shop: 'shopMode', direct: 'directMode', timeline: 'timelineMode' };
+  for (const [k, id] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden', k !== which);
+    const tab = document.getElementById('tab' + k[0].toUpperCase() + k.slice(1));
+    if (tab) tab.classList.toggle('active', k === which);
+  }
+  if (which === 'timeline') initScheduler();
+}
+document.getElementById('tabShop').onclick = () => showTab('shop');
+document.getElementById('tabDirect').onclick = () => showTab('direct');
+document.getElementById('tabTimeline').onclick = () => showTab('timeline');
 
 // --- Shop flow ---
 document.getElementById('shopBtn').onclick = async () => {
