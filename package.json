@@ -10,6 +10,7 @@
     "test:gate": "node tests/moneyGate.test.js",
     "test:smoke": "bash tests/smoke.sh",
     "test:live": "node tests/paypalSandbox.live.mjs",
+    "test:channel3": "node tests/channel3.live.mjs",
     "demo": "node demo/server.mjs"
   },
   "keywords": ["paypal", "webmcp", "agentic-commerce", "multi-agent", "ai"],

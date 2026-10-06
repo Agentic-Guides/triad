@@ -45,14 +45,23 @@ export class Channel3 {
   async search(q = {}) {
     if (this.mock) return this._mockSearch(q);
 
-    const params = new URLSearchParams();
-    if (q.query) params.set('query', q.query);
-    if (q.category) params.set('category', q.category);
-    if (q.maxPrice) params.set('max_price', String(q.maxPrice));
-    if (q.limit) params.set('limit', String(q.limit || 10));
+    // Channel3 /v1/search: POST with a JSON body, authenticated via the
+    // `x-api-key` header (NOT Authorization: Bearer).
+    const body = { query: q.query || q.category || '', limit: q.limit || 10 };
+    const filters = {};
+    if (q.maxPrice) filters.price = { max_price: q.maxPrice };
+    if (q.minPrice) filters.price = { ...(filters.price || {}), min_price: q.minPrice };
+    if (q.category) filters.category = q.category;
+    if (Object.keys(filters).length) body.filters = filters;
 
-    const res = await fetch(`${this.base}/v1/search?${params}`, {
-      headers: { Authorization: `Bearer ${this.apiKey}`, Accept: 'application/json' },
+    const res = await fetch(`${this.base}/v1/search`, {
+      method: 'POST',
+      headers: {
+        'x-api-key': this.apiKey,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`Channel3 ${res.status}: ${await res.text()}`);
     const data = await res.json();
@@ -83,15 +92,33 @@ export class Channel3 {
 
   _normalize(data) {
     const list = data.products || data.results || data.data || (Array.isArray(data) ? data : []);
-    return list.map(p => ({
-      id: p.id || p.product_id || `ch3_${Math.random().toString(36).slice(2, 8)}`,
-      title: p.title || p.name || 'Unknown product',
-      brand: p.brand || p.merchant || '',
-      price: Number(p.price || p.lowest_price || 0),
-      currency: p.currency || 'USD',
-      category: p.category || '',
-      rating: Number(p.rating || 0),
-      url: p.url || p.link || '',
-    }));
+    return list.map(p => {
+      // Real Channel3 shape (verified live 2026-10-06):
+      //   brands: [{id,name}]  images: [{url,is_main_image}]  offers: [{url,price:{price,currency}}]
+      const offer = (Array.isArray(p.offers) && p.offers[0]) || {};
+      const priceObj = (offer && typeof offer.price === 'object') ? offer.price : {};
+      const price = Number(priceObj.price ?? offer.price ?? p.price ?? 0);
+      const currency = priceObj.currency || offer.currency || p.currency || 'USD';
+      const images = Array.isArray(p.images) ? p.images : [];
+      const mainImg = images.find(i => i && i.is_main_image) || images[0] || {};
+      const brands = Array.isArray(p.brands) ? p.brands : [];
+      const brand = brands[0]?.name || (typeof p.brand === 'object' ? p.brand?.name : p.brand) || offer.domain || '';
+      const rating = Number(p.ratings?.average ?? p.ratings?.rating ?? p.rating ?? 0);
+      return {
+        id: p.id || p.product_id || `ch3_${Math.random().toString(36).slice(2, 8)}`,
+        title: p.title || p.name || 'Unknown product',
+        brand,
+        price,
+        compareAtPrice: priceObj.compare_at_price ?? null,
+        currency,
+        category: p.category || '',
+        rating,
+        merchant: offer.domain || '',
+        availability: offer.availability || '',
+        url: offer.url || p.url || p.link || '',
+        image: mainImg.url || '',
+        images: images.map(i => i && i.url).filter(Boolean),
+      };
+    });
   }
 }
