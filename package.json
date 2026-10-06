@@ -9,6 +9,7 @@
     "test": "node tests/moneyGate.test.js && node test_triad.mjs",
     "test:gate": "node tests/moneyGate.test.js",
     "test:smoke": "bash tests/smoke.sh",
+    "test:live": "node tests/paypalSandbox.live.mjs",
     "demo": "node demo/server.mjs"
   },
   "keywords": ["paypal", "webmcp", "agentic-commerce", "multi-agent", "ai"],

@@ -1,8 +1,12 @@
 # TRIAD
 
-**Adversarial consensus for agentic commerce. When three independent AIs can't agree, the disagreement itself becomes a tamper-evident audit trail — and the human decides.**
+> **One AI can spend your money. Three AIs have to agree first — and the argument is stamped into the payment record.**
 
-A working prototype for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/) — agentic commerce with adversarial AI governance.
+TRIAD is the accountability layer for **agentic commerce**. It replaces a single
+rubber-stamp agent with three adversarial ones, and it writes the outcome — *including the
+dissent* — into a tamper-evident audit trail that lives inside the PayPal order itself.
+
+A working prototype for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/).
 
 **Sponsor tools used:** PayPal ✅ · AG Grid ✅ · Channel3 ✅ · WebMCP ✅
 
@@ -10,17 +14,37 @@ A working prototype for the [PayPal AI Hackathon](https://paypalaihackathon.devp
 
 ---
 
+## In 10 seconds
+
+| | |
+|---|---|
+| **The problem** | AI agents can now buy things. Nobody trusts *one* of them to spend your money alone. |
+| **The idea** | Advocate argues FOR · Auditor argues AGAINST · Witness judges. Money moves only on consensus. |
+| **The novel part** | When they disagree, the disagreement becomes a **receipt** — hashed and stamped into the PayPal order's `custom_id`. The payment record *is* the audit trail. |
+| **The proof** | `tests/moneyGate.test.js` shows a DENIED/DISSENT decision creates **0** PayPal orders. `tests/paypalSandbox.live.mjs` proves the stamp round-trips through **real PayPal**. |
+
 ## Who this is for
 
-**Small-business finance operators** who must approve employee or agent spend but cannot trust a single AI agent to both *want* and *approve* a purchase.
+**Small-business finance operators** — the person who signs off on team spend but cannot
+personally vet every agent-driven purchase.
 
-PayPal says it is building agentic commerce *"especially for small businesses."* TRIAD is the accountability layer that makes that safe: it does not make buying easier — it makes autonomous buying **answerable**.
+PayPal says it is building agentic commerce *"especially for small businesses."* TRIAD is
+the accountability layer that makes that safe. It does not make buying easier — it makes
+autonomous buying **answerable**.
+
+> **The user story:** Rina runs a 12-person studio. She gives an agent a monthly budget for
+> gear. When it tries to buy a $500 headset with only $120 left in the envelope, she doesn't
+> get a silent failure — she gets the *argument*: who wanted it, who blocked it, and a hash
+> proving that record hasn't been edited.
 
 ## The specific problem
 
 Agentic commerce makes buying trivial. **Accountability is the missing layer.**
 
-PayPal is opening its rails to AI agents. The blocker isn't technology — it's **trust**. A single agent that both *wants* and *approves* a purchase is just a rubber stamp. Nothing yet records **why** an autonomous purchase was allowed — or **who objected** — in a form a human can audit after the fact.
+PayPal is opening its rails to AI agents. The blocker isn't technology — it's **trust**. A
+single agent that both *wants* and *approves* a purchase is just a rubber stamp. Nothing yet
+records **why** an autonomous purchase was allowed — or **who objected** — in a form a human
+(or an auditor, or a regulator) can verify after the fact.
 
 ## The Idea
 
