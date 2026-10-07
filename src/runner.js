@@ -1,5 +1,5 @@
 /**
- * TRIAD Agent Runner — connects the 3 agents to LLM providers.
+ * Anna Pays Tuesday — Agent Runner — connects the 3 agents to LLM providers.
  *
  * Provider-agnostic: works with Ollama Cloud (this repo's default), or any
  * OpenAI-compatible endpoint. Falls back to the deterministic reasoning engine
@@ -13,7 +13,8 @@ const DEFAULT_ENDPOINT = 'https://ollama.com/v1/chat/completions';
 // Distinct models per role → genuinely independent adversaries.
 // Independent models produce genuinely independent judgments. Three copies of the
 // same model share the same blind spots, which defeats the adversarial design.
-// Override any of these with TRIAD_MODEL_<ROLE> env vars.
+// Override any of these with TRIAD_MODEL_<ROLE> env vars (the env-var prefix keeps
+// its original name for compatibility).
 //
 // ★ Model names verified live against Ollama Cloud's /api/tags (2026-10-07).
 //   Three DIFFERENT vendors on purpose: DeepSeek / Google / OpenAI-OSS.

@@ -1,5 +1,5 @@
 /**
- * PayPal Integration for TRIAD
+ * PayPal Integration for Anna Pays Tuesday
  *
  * Two modes:
  *   1. LIVE SANDBOX  — uses PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET (sandbox)
@@ -58,7 +58,7 @@ export class PayPalClient {
   }
 
   /**
-   * Create an order for a TRIAD-approved purchase.
+   * Create an order for a tribunal-approved purchase.
    * @param {object} purchase { amount, currency, reason, category }
    * @param {object} options  { returnUrl, cancelUrl }
    */
@@ -74,7 +74,7 @@ export class PayPalClient {
         },
       ],
       application_context: {
-        brand_name: 'TRIAD',
+        brand_name: 'Anna Pays Tuesday',
         user_action: 'PAY_NOW',
         return_url: options.returnUrl || 'https://example.com/return',
         cancel_url: options.cancelUrl || 'https://example.com/cancel',

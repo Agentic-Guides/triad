@@ -1,5 +1,5 @@
 /**
- * TRIAD Demo Server — zero-dependency HTTP server.
+ * Anna Pays Tuesday Demo Server — zero-dependency HTTP server.
  * Serves the demo UI and exposes a JSON API that runs the adversarial engine.
  *
  * Run: node demo/server.mjs    → http://localhost:8787
@@ -78,6 +78,6 @@ async function readJson(req) {
 
 const PORT = process.env.PORT || 8787;
 server.listen(PORT, () => {
-  console.log(`\n⚖️  TRIAD demo running → http://localhost:${PORT}`);
+  console.log(`\n⚖️  Anna Pays Tuesday demo running → http://localhost:${PORT}`);
   console.log(`   PayPal: ${triad._paypal.mode}  |  LLM: ${triad._runner.live ? 'live' : 'deterministic'}  |  Catalog: ${commerce._catalog.mode}\n`);
 });

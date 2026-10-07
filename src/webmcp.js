@@ -1,7 +1,7 @@
 /**
- * TRIAD — WebMCP Tool Registration
+ * Anna Pays Tuesday — WebMCP Tool Registration
  *
- * Exposes TRIAD's adversarial adjudication + PayPal settlement as WebMCP tools,
+ * Exposes the adversarial adjudication + PayPal settlement as WebMCP tools,
  * so any WebMCP-capable AI agent (Chrome 146+) can invoke it from a web page.
  *
  * Tools registered:
@@ -192,11 +192,11 @@ export function createTriad({ runner, paypal } = {}) {
 }
 
 /**
- * Register TRIAD as WebMCP tools on the current page.
+ * Register Anna Pays Tuesday as WebMCP tools on the current page.
  */
 export function registerTriadWebMCP(triad = createTriad()) {
   if (typeof navigator === 'undefined' || !('modelContext' in navigator)) {
-    console.warn('[TRIAD] navigator.modelContext unavailable (needs Chrome 146+ WebMCP flag)');
+    console.warn('[AnnaPaysTuesday] navigator.modelContext unavailable (needs Chrome 146+ WebMCP flag)');
     return triad;
   }
   const mc = navigator.modelContext;
@@ -224,7 +224,7 @@ export function registerTriadWebMCP(triad = createTriad()) {
   mc.registerTool({
     name: 'triadCreateOrder',
     description:
-      'Create a PayPal order for a purchase that TRIAD has APPROVED or CONDITIONALLY approved. Returns a PayPal approval link. Money does not move until triadCaptureOrder is called (human approval step).',
+      'Create a PayPal order for a purchase the tribunal has APPROVED or CONDITIONALLY approved. Returns a PayPal approval link. Money does not move until triadCaptureOrder is called (human approval step).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -252,7 +252,7 @@ export function registerTriadWebMCP(triad = createTriad()) {
 
   mc.registerTool({
     name: 'triadGetLedger',
-    description: 'Read-only: list every purchase adjudication TRIAD has made, with decision, vote counts, and consensus receipt hash.',
+    description: 'Read-only: list every adjudication the tribunal has made, with decision, vote counts, and consensus receipt hash.',
     inputSchema: { type: 'object', properties: {} },
     annotations: { readOnlyHint: true },
     execute: async () => triad.triadGetLedger(),
@@ -273,6 +273,6 @@ export function registerTriadWebMCP(triad = createTriad()) {
     execute: async (input) => triad.triadVerifyReceipt(input || {}),
   });
 
-  console.log('[TRIAD] Registered 5 WebMCP tools: triadAdjudicate, triadCreateOrder, triadCaptureOrder, triadGetLedger, triadVerifyReceipt');
+  console.log('[AnnaPaysTuesday] Registered 5 WebMCP tools: triadAdjudicate, triadCreateOrder, triadCaptureOrder, triadGetLedger, triadVerifyReceipt');
   return triad;
 }

@@ -76,6 +76,11 @@ stamped onto the money**:
 > A consensus receipt — decision + all three votes + a SHA-256 fingerprint of each agent's reasoning —
 > is hashed and stamped into the PayPal record's `custom_id` (`triad1:<hash>`). Anyone can re-hash the
 > receipt and prove the record was not altered.
+>
+> *A note on the prefix:* the stamp reads `triad1:` because the three-agent tribunal — the **triad** —
+> is the core of this product. The prefix predates the project's rename and is kept deliberately: it is
+> already written into live PayPal sandbox records, and changing it would invalidate the round-trip
+> proof below. It names the mechanism, not the product.
 
 That is the difference between *"an AI renewed this subscription"* and *"here is exactly which agent
 voted what, on which model, and here is a hash proving the record is intact."*
@@ -87,7 +92,7 @@ Tuesday 03:00 — a subscription renewal fails (card declined)
         ↓
 PayPal reports the failure
         ↓
-TRIAD tribunal (3 independent LLMs, 3 vendors)
+Anna Pays Tuesday's tribunal (3 independent LLMs, 3 vendors)
    Advocate : "retry — this subscriber has paid 14 months in a row"
    Auditor  : "against — third failure this quarter, the card is dead"
    Witness  : "conditional — retry once, then downgrade"
@@ -113,8 +118,8 @@ src/triad.js       — Adversarial consensus engine (roles, arguments, adjudicat
 src/runner.js      — Runs the 3 agents on 3 different vendors' models (Ollama Cloud)
 src/receipt.js     — Consensus receipt: canonical hash of decision + votes + reasoning fingerprints
 src/channel3.js    — Channel3 product-catalog adapter (real API)
-src/commerce.js    — Shop flow: Channel3 candidates → TRIAD adjudication
-src/webmcp.js      — Registers TRIAD as WebMCP tools + orchestrates PayPal settlement
+src/commerce.js    — Shop flow: Channel3 candidates → tribunal adjudication
+src/webmcp.js      — Registers the tribunal as WebMCP tools + orchestrates PayPal settlement
 paypal/client.js   — PayPal Orders v2 REST client (Sandbox, + deterministic mock fallback)
 paypal/mcpClient.js— PayPal Agent Toolkit (MCP) adapter — the official agent-facing layer
 demo/server.mjs    — Zero-dependency HTTP server
@@ -205,7 +210,7 @@ independent agents agree, and a human signs off.
 
 | Tool | Purpose |
 |---|---|
-| `triadShop` | Channel3 candidates → TRIAD adjudication → consensus recommendation |
+| `triadShop` | Channel3 candidates → tribunal adjudication → consensus recommendation |
 | `triadAdjudicate` | Run the 3-agent debate → decision + dissent map + consensus receipt |
 | `triadCreateOrder` | Create a PayPal order for an approved purchase (stamps the receipt hash into `custom_id`) |
 | `triadCaptureOrder` | Capture (finalize) — the human-approval step |

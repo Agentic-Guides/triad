@@ -3,7 +3,7 @@
  *
  * Channel3 exposes 50M+ structured, deduplicated products across partner brands
  * and retailers, designed for AI agents to search/compare/monetize. This adapter
- * gives TRIAD's Advocate a real product to argue about.
+ * gives the Advocate a real product to argue about.
  *
  * Falls back to a curated MOCK catalog when no CHANNEL3_API_KEY is present,
  * so the demo always runs.

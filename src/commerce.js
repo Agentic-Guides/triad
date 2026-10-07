@@ -1,8 +1,8 @@
 /**
- * TRIAD + Channel3 integration.
+ * Anna Pays Tuesday + Channel3 integration.
  *
  * Flow: user names a category → Channel3 returns real product candidates →
- * TRIAD's Advocate argues for the best one, the Auditor checks it against the
+ * The Advocate argues for the best one, the Auditor checks it against the
  * budget, the Witness judges. This grounds the debate in real, purchasable SKUs.
  */
 
@@ -17,7 +17,7 @@ export function createTriadCommerce({ triad, catalog } = {}) {
   /**
    * Full commerce flow:
    *   1. Find candidate products (Channel3)
-   *   2. Adjudicate the top candidate (TRIAD)
+   *   2. Adjudicate the top candidate (the tribunal)
    *   3. Optionally create a PayPal order
    */
   async function triadShop({ category, query, monthlyBudget, spentThisMonth, recentPurchases, maxPrice } = {}) {
@@ -74,7 +74,7 @@ export function createTriadCommerce({ triad, catalog } = {}) {
 /** Register commerce tools on WebMCP. */
 export function registerTriadCommerceWebMCP(commerce = createTriadCommerce()) {
   if (typeof navigator === 'undefined' || !('modelContext' in navigator)) {
-    console.warn('[TRIAD-Commerce] navigator.modelContext unavailable');
+    console.warn('[Commerce] navigator.modelContext unavailable');
     return commerce;
   }
   const mc = navigator.modelContext;
@@ -99,6 +99,6 @@ export function registerTriadCommerceWebMCP(commerce = createTriadCommerce()) {
     execute: async (input) => commerce.triadShop(input || {}),
   });
 
-  console.log('[TRIAD-Commerce] Registered WebMCP tool: triadShop');
+  console.log('[Commerce] Registered WebMCP tool: triadShop');
   return commerce;
 }

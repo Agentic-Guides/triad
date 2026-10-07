@@ -1,8 +1,9 @@
 /**
- * TRIAD — Adversarial Consensus Engine
+ * Anna Pays Tuesday — Adversarial Consensus Engine
  * 敵対的マルチエージェント金融統制
  *
  * 3体の独立したAIが金の使い方を議論し、閾値合意でのみ決済を承認する。
+ * 「トライアド（三者審理）」がこの作品の核であり、レシートの接頭辞 `triad1:` はここに由来する。
  *
  *   ADVOCATE  — 買いたい（欲求を代表）
  *   AUDITOR   — 止めたい（予算・リスクを代表）

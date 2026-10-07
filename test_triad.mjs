@@ -1,5 +1,5 @@
 /**
- * TRIAD end-to-end test (deterministic engine — no API key needed).
+ * Anna Pays Tuesday end-to-end test (deterministic engine — no API key needed).
  * Proves the adjudication + PayPal mock flow works.
  */
 import { createTriad } from './src/webmcp.js';
@@ -49,8 +49,15 @@ function show(label, v) { console.log(`\n=== ${label} ===\n${JSON.stringify(v, n
   console.log(r.decision === DECISION.CONDITIONAL ? '  PASS' : '  FAIL');
 }
 
-// --- Test 4: full TRIAD flow with mock PayPal ---
-console.log('\n\n########## Test 4: Full TRIAD flow (mock PayPal) ##########');
+// --- Test 4: full flow with mock PayPal ---
+// This test exercises the money gate and the order lifecycle MECHANICALLY, so it
+// deliberately forces MOCK mode. Pointing it at the live sandbox would (correctly)
+// fail at capture with 422 ORDER_NOT_APPROVED, because PayPal requires a human to
+// approve the order first. That behaviour is verified separately, on purpose, by
+// tests/paypalSandbox.live.mjs.
+console.log('\n\n########## Test 4: Full flow with mock PayPal ##########');
+delete process.env.PAYPAL_CLIENT_ID;
+delete process.env.PAYPAL_CLIENT_SECRET;
 const triad = createTriad();
 
 (async () => {
@@ -76,5 +83,5 @@ const triad = createTriad();
   const ledger = triad.triadGetLedger();
   show('Ledger', { count: ledger.count, entries: ledger.entries.map(e => ({ decision: e.decision, summary: e.summary })) });
 
-  console.log('\n✅ All TRIAD tests complete');
+  console.log('\n✅ All Anna Pays Tuesday tests complete');
 })();

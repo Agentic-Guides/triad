@@ -1,7 +1,7 @@
 /**
  * tests/paypalSandbox.live.mjs
  *
- * LIVE PayPal sandbox verification — proves the TRIAD core loop end-to-end
+ * LIVE PayPal sandbox verification — proves the core loop end-to-end
  * against the REAL PayPal REST API (not the mock):
  *
  *   1. OAuth token from client_credentials
