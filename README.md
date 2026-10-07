@@ -1,12 +1,12 @@
 # Anna Pays Tuesday
 
-> **When a subscription payment fails, three AI agents debate whether to retry, downgrade, or let the customer go — and a real PayPal subscription is updated on their consensus. The merchant approves. The customer can object. The proof is stamped into the payment record.**
+> **When a subscription renewal fails at 3 AM, three AI agents debate whether to retry, downgrade, or let the customer go — and a real PayPal subscription is updated on their consensus. The brand approves. The customer can object. The proof is stamped into the payment record.**
 
 A working prototype for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/).
 
 **Sponsor tools used:** PayPal ✅ · AG Grid ✅ · Bryntum ✅ · Channel3 ✅
 
-> **Anna Pays Tuesday runs on the official PayPal Agent Toolkit (MCP) — the same `@paypal/mcp` server PayPal ships — plus PayPal Orders v2 REST. Three independent LLMs decide; PayPal settles. Nothing is renewed unless the three agents agree and a human merchant signs off.**
+> **Anna Pays Tuesday runs on the official PayPal Agent Toolkit (MCP) — the same `@paypal/mcp` server PayPal ships — plus PayPal Orders v2 REST and Subscriptions v1. Three independent LLMs decide; PayPal settles. Nothing is renewed unless the three agents agree and a human signs off.**
 
 ---
 
@@ -14,52 +14,59 @@ A working prototype for the [PayPal AI Hackathon](https://paypalaihackathon.devp
 
 | | |
 |---|---|
-| **The person** | **Anna**, a one-woman soap shop in Berlin. Every month she bills ~200 subscribers for a €9.99 supply box. |
-| **The moment** | **Wednesday: a renewal fails.** Expired card. If nobody retries, Anna loses the customer — and the customer loses their box. |
-| **The idea** | Three AI agents read the failed payment and argue: **retry**, **downgrade**, or **let them go**. A consensus updates the subscription through PayPal. Anna approves; the customer can object. |
+| **The brand** | A US skincare subscription brand. **$42 a month, ~12,000 subscribers.** |
+| **The moment** | **Tuesday, 3 AM. A renewal fails.** Card declined. Multiply that by thousands of subscribers. |
+| **Why it matters** | **25–40% of subscription churn starts exactly here** — at a failed payment, not a lost customer. |
+| **The idea** | Three AI agents read the failed renewal and argue: **retry**, **downgrade**, or **release**. A consensus updates the subscription through PayPal. The brand approves; the customer can object. |
 | **The novel part** | The decision — *including the disagreement* — is hashed and stamped into the payment record itself. The receipt **is** the audit trail. |
 | **The proof** | Live against the **real PayPal sandbox**: a product, a subscription plan, and a subscription, created through PayPal's own MCP server. No mock. |
 
 ## Who this is for
 
-**Small online merchants who bill recurring customers** — the seller who cannot afford to lose a
-subscriber to a payment hiccup, and cannot chase every failed charge by hand.
+**US subscription brands selling physical goods** — skincare, supplements, consumables — the
+operator who loses real revenue every month to renewals that quietly fail, and cannot chase every
+declined card by hand.
 
-**And the customer on the other side** of that subscription, who should never be renewed without
+**And the subscriber on the other side** of that renewal, who should never be re-billed without
 seeing why, and should always be able to say *no*.
 
-> **The story, in one line:** *A failed €9.99 renewal on Wednesday becomes a reviewed, provable,
-> human-approved payment by Thursday.*
+> **The story, in one line:** *A failed $42 renewal on Tuesday becomes a reviewed, provable,
+> human-approved payment — without the customer ever being lost to a silent decline.*
 
 ## The specific problem
 
-PayPal's own business runs on **branded checkout and recurring billing**. Its
-[most recent results](https://investor.pypl.com/) show branded checkout volume essentially flat
-(+2%) and take rate slipping to 1.61%. The growth is in **AI agents that pay on a customer's
-behalf** — PayPal's own definition of agentic commerce.
+PayPal's own business runs on **branded checkout and recurring billing**, and both are under
+pressure. Its [most recent results](https://investor.pypl.com/) show branded checkout volume stuck
+at **+2%** for a second straight quarter while **Apple Pay, Klarna, and Shop Pay** close in. The
+growth PayPal is betting on is **AI agents that pay on a customer's behalf** — its own definition of
+agentic commerce, which
+[PayPal projects](https://www.paypal.com/us/brc/article/agentic-commerce-pulse-report-findings) will
+reach **$1.7 trillion by 2030**.
 
 But **recurring billing has a hole nobody has filled: the failure path.**
 
-When a subscription payment fails, today's options are crude: the platform retries blindly, or it
-cancels. There is no *judgement*, and no *record* of why the decision was made. For a merchant
-billing real customers, that is the difference between a recovered subscriber and a silent churn.
+When a renewal fails, today's options are crude: retry blindly, or cancel. There is no *judgement*,
+and no *record* of why the decision was made. Industry benchmarks show that **25–40% of subscription
+churn is involuntary** — the customer never chose to leave; the payment just failed — and that it is
+*"a payments-infrastructure problem with a technical fix."* For a brand billing real customers, that
+is the difference between a recovered subscriber and a silent loss.
 
 ## What Anna Pays Tuesday does
 
-**It puts three independent AI agents on the failed-payment path, and makes PayPal the place the
+**It puts three independent AI agents on the failed-renewal path, and makes PayPal the place the
 decision lands.**
 
 | Agent | Model (different vendor each) | Job |
 |---|---|---|
-| **Advocate** | `deepseek-v4.1-flash` (DeepSeek) | Argues to retry — the customer is valuable, the failure looks technical |
+| **Advocate** | `deepseek-v4.1-flash` (DeepSeek) | Argues to retry — the subscriber is valuable, the failure looks technical |
 | **Auditor** | `gemma4:31b` (Google) | Opposes only on a concrete, citable risk — repeated failures, churn pattern, margin loss |
 | **Witness** | `gpt-oss:120b` (OpenAI OSS) | Judges both sides and decides: retry / downgrade / release |
 
 **Three different vendors on purpose.** Three copies of the same model share the same blind spots —
-which defeats the entire point of an adversarial review.
+which defeats the entire point of an adversarial review. (Measurement: the Auditor model was chosen
+at 196 tokens / 844 ms per turn, versus 365 tokens / 4,466 ms for the alternative.)
 
-Money and subscriptions move **only on consensus**, and the outcome is written into the payment
-record.
+The renewal moves **only on consensus**, and the outcome is written into the payment record.
 
 ### The novel part: a disagreement you can verify
 
@@ -76,24 +83,24 @@ voted what, on which model, and here is a hash proving the record is intact."*
 ## How it works, end to end
 
 ```
-Wednesday 09:14 — subscription renewal fails (expired card)
+Tuesday 03:00 — a subscription renewal fails (card declined)
         ↓
-PayPal Webhooks / REST → the failure is detected
+PayPal reports the failure
         ↓
 TRIAD tribunal (3 independent LLMs, 3 vendors)
-   Advocate : "retry — the customer has paid 14 months in a row"
-   Auditor  : "against — third failure this quarter, card is dead"
+   Advocate : "retry — this subscriber has paid 14 months in a row"
+   Auditor  : "against — third failure this quarter, the card is dead"
    Witness  : "conditional — retry once, then downgrade"
         ↓
-CONSENSUS?  ── no ──→  money does NOT move. Dissent map returned to Anna.
+CONSENSUS?  ── no ──→  nothing is created. The dissent map is returned to the brand.
         │
        yes
         ↓
-PayPal Agent Toolkit (MCP) + Orders v2 / Subscriptions v1
-   → the subscription is updated / the order is created
+PayPal Agent Toolkit (MCP) + Subscriptions v1 / Orders v2
+   → the renewal is created through PayPal's MCP server
    → the receipt hash is stamped into custom_id
         ↓
-Anna approves in one tap. The customer sees exactly what happened, and can object.
+The brand approves in one tap. The subscriber sees exactly what happened, and can object.
         ↓
 AG Grid  — ledger of every decision, vote, and hash
 Bryntum  — the renewal timeline: which failures are still open
@@ -112,13 +119,13 @@ paypal/client.js   — PayPal Orders v2 REST client (Sandbox, + deterministic mo
 paypal/mcpClient.js— PayPal Agent Toolkit (MCP) adapter — the official agent-facing layer
 demo/server.mjs    — Zero-dependency HTTP server
 demo/index.html    — Demo UI (AG Grid ledger + Bryntum renewal timeline)
-tests/moneyGate.test.js — The money gate, mechanically proven (0 orders on non-consensus)
+tests/moneyGate.test.js — The money gate, mechanically proven (0 records on non-consensus)
 tests/paypalSandbox.live.mjs — Live proof against the real PayPal sandbox
 tests/channel3.live.mjs      — Live proof against the real Channel3 API
 ```
 
 ### Decision states
-- `APPROVED` — ≥2 agents for, no blocking condition → the subscription/order may proceed
+- `APPROVED` — ≥2 agents for, no blocking condition → the renewal may proceed
 - `CONDITIONAL` — the Witness approves only under a stated condition ("retry once, then downgrade")
 - `DENIED` — ≥2 agents against → **nothing may be created**
 - `DISSENT` — no consensus → the dissent map is returned to the human
@@ -130,7 +137,7 @@ is used across **five** surfaces:
 
 | Surface | How it is used |
 |---|---|
-| **Agent Toolkit / MCP** (`@paypal/mcp`) | The official agent-facing layer. The agents call **`create_product`, `create_subscription_plan`, `list_subscription_plans`, `create_subscription`, `cancel_subscription`** through PayPal's own MCP server. |
+| **Agent Toolkit / MCP** (`@paypal/mcp`) | The official agent-facing layer. The agents call **`create_product`, `create_subscription_plan`, `list_subscription_plans`, `create_subscription`, `show_subscription_details`, `cancel_subscription`** through PayPal's own MCP server. |
 | **Orders v2 REST** | Order lifecycle: create → approval link → capture. The ground truth for the money gate. |
 | **Subscriptions v1** | Product → plan → subscription → approval. The recurring-billing path this project is built around. |
 | **Disputes v1** | `list` / `get` — reachable from the same client. |
@@ -150,6 +157,7 @@ create_product            → PROD-60748010N1494543C
 create_subscription_plan  → P-373849401N470725XNLC2ABY   status=ACTIVE
 create_subscription       → I-1V5J40E95883                status=APPROVAL_PENDING
    approve: https://www.sandbox.paypal.com/webapps/billing/subscriptions?ba_token=...
+show_subscription_details → status APPROVAL_PENDING, custom_id triad1:annapays01
 list_subscription_plans   → 1 plan
 ```
 
@@ -186,6 +194,12 @@ node tests/moneyGate.test.js   # asserts createOrder is called 0 times on DENIED
 
 Most "AI spending" demos prove an agent *can* pay. This one proves it **cannot** — unless three
 independent agents agree, and a human signs off.
+
+> **A note on PayPal's design.** In the sandbox, an `APPROVAL_PENDING` subscription **cannot be
+> activated by an API call** — PayPal requires the buyer to approve. We verified this directly
+> (`POST /activate` → 422). That is not a limitation we worked around; it is the point. PayPal has
+> built human consent into the payment structure, which is exactly what makes agentic commerce
+> trustworthy.
 
 ## WebMCP Tools
 
@@ -228,14 +242,14 @@ node demo/server.mjs
 |---|---|
 | **PayPal** | Agent Toolkit / MCP (`create_subscription`, `cancel_subscription`, `create_order`, …) + Orders v2 REST + Subscriptions v1. Sandbox; deterministic fallback when no key. |
 | **AG Grid** | The decision ledger — every renewal, every vote, every receipt hash, with a selection-driven receipt panel. |
-| **Bryntum Scheduler** | The renewal timeline — who decided what, when, and which failed payments are still unresolved. |
+| **Bryntum Scheduler** | The renewal timeline — who decided what, when, and which failed renewals are still unresolved. |
 | **Channel3** | Product discovery — grounds the debate in a real, purchasable SKU (real API, no mocks). |
 
 ## Impact
 
-Recurring billing is where PayPal makes its money, and **the failure path is where it loses
-customers.** Anna Pays Tuesday turns that failure into a reviewed, provable, human-approved
-decision — recovered revenue for the merchant, and a record the customer can trust.
+Recurring billing is where PayPal makes its money, and **the failure path is where brands lose
+customers.** Anna Pays Tuesday turns a failed renewal into a reviewed, provable, human-approved
+decision — recovered revenue for the brand, and a record the subscriber can trust.
 
 The pattern generalises to *any* high-stakes agent action: subscription changes, refunds, payouts.
 **Adversarial review + surfaced dissent + a human final call + a tamper-evident record** is what

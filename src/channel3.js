@@ -12,17 +12,15 @@
 const CHANNEL3_BASE = 'https://api.trychannel3.com';
 
 // Curated fallback catalog (representative categories the tribunal can debate).
+// Aligned with the demo story: a US skincare subscription brand choosing what the
+// next renewal should be (retry the same box, or downgrade to a cheaper refill).
 const MOCK_CATALOG = [
-  { id: 'ch3_hp_001', title: 'Sony WH-1000XM5 Wireless Headphones', brand: 'Sony', price: 348.00, currency: 'USD', category: 'audio', rating: 4.7, url: 'https://example.com/sony-xm5' },
-  { id: 'ch3_hp_002', title: 'Refurbished Bose QuietComfort 45', brand: 'Bose', price: 149.00, currency: 'USD', category: 'audio', rating: 4.5, url: 'https://example.com/bose-qc45' },
-  { id: 'ch3_laptop_001', title: 'MacBook Air M3 13"', brand: 'Apple', price: 1099.00, currency: 'USD', category: 'computers', rating: 4.8, url: 'https://example.com/mba-m3' },
-  { id: 'ch3_laptop_002', title: 'Refurbished ThinkPad X1 Carbon', brand: 'Lenovo', price: 549.00, currency: 'USD', category: 'computers', rating: 4.4, url: 'https://example.com/thinkpad-x1' },
-  { id: 'ch3_watch_001', title: 'Seiko Prospex Automatic Diver', brand: 'Seiko', price: 450.00, currency: 'USD', category: 'watches', rating: 4.6, url: 'https://example.com/seiko-diver' },
-  { id: 'ch3_watch_002', title: 'Casio G-Shock GA-2100', brand: 'Casio', price: 99.00, currency: 'USD', category: 'watches', rating: 4.5, url: 'https://example.com/gshock' },
-  { id: 'ch3_lens_001', title: 'Canon RF 50mm f/1.8 STM', brand: 'Canon', price: 199.00, currency: 'USD', category: 'cameras', rating: 4.7, url: 'https://example.com/canon-rf50' },
-  { id: 'ch3_cam_001', title: 'Fujifilm X-T5 Body', brand: 'Fujifilm', price: 1699.00, currency: 'USD', category: 'cameras', rating: 4.8, url: 'https://example.com/xt5' },
-  { id: 'ch3_chair_001', title: 'Steelcase Series 2 Office Chair', brand: 'Steelcase', price: 415.00, currency: 'USD', category: 'furniture', rating: 4.5, url: 'https://example.com/steelcase-2' },
-  { id: 'ch3_desk_001', title: 'Autonomous SmartDesk Core', brand: 'Autonomous', price: 399.00, currency: 'USD', category: 'furniture', rating: 4.3, url: 'https://example.com/smartdesk' },
+  { id: 'ch3_skin_001', title: 'Hyaluronic Acid Serum 30ml', brand: 'Lumen Skin', price: 42.00, currency: 'USD', category: 'skincare', rating: 4.7, url: 'https://example.com/lumen-hyaluronic' },
+  { id: 'ch3_skin_002', title: 'Hyaluronic Acid Serum 15ml (travel refill)', brand: 'Lumen Skin', price: 24.00, currency: 'USD', category: 'skincare', rating: 4.6, url: 'https://example.com/lumen-hyaluronic-15' },
+  { id: 'ch3_skin_003', title: 'Retinol Night Serum 30ml', brand: 'Lumen Skin', price: 48.00, currency: 'USD', category: 'skincare', rating: 4.8, url: 'https://example.com/lumen-retinol' },
+  { id: 'ch3_skin_004', title: 'Niacinamide Day Cream 50ml', brand: 'Lumen Skin', price: 34.00, currency: 'USD', category: 'skincare', rating: 4.5, url: 'https://example.com/lumen-niacinamide' },
+  { id: 'ch3_skin_005', title: 'Vitamin C Brightening Serum 30ml', brand: 'Lumen Skin', price: 39.00, currency: 'USD', category: 'skincare', rating: 4.7, url: 'https://example.com/lumen-vitc' },
+  { id: 'ch3_skin_006', title: 'Gentle Foaming Cleanser 150ml (refill)', brand: 'Lumen Skin', price: 19.00, currency: 'USD', category: 'skincare', rating: 4.6, url: 'https://example.com/lumen-cleanser' },
 ];
 
 export class Channel3 {
