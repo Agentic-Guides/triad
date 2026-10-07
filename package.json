@@ -1,7 +1,7 @@
 {
-  "name": "triad",
+  "name": "anna-pays-tuesday",
   "version": "1.0.0",
-  "description": "TRIAD — adversarial multi-agent governance for PayPal agentic commerce. Three independent AI agents debate a purchase; money only moves on consensus.",
+  "description": "Anna Pays Tuesday — when a subscription payment fails, three AI agents debate retry/downgrade/release and a real PayPal subscription is updated on their consensus. The proof is stamped into the payment record.",
   "type": "module",
   "main": "src/webmcp.js",
   "scripts": {
