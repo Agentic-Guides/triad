@@ -1,5 +1,5 @@
 /**
- * Anna Pays Tuesday — Adversarial Consensus Engine
+ * Tuesday — Adversarial Consensus Engine
  * 敵対的マルチエージェント金融統制
  *
  * 3体の独立したAIが金の使い方を議論し、閾値合意でのみ決済を承認する。

@@ -1,5 +1,5 @@
 /**
- * Anna Pays Tuesday money-gate test — the mechanical proof.
+ * Tuesday money-gate test — the mechanical proof.
  *
  * The claim on the README is strong:
  *   "A DENIED or DISSENT adjudication cannot produce a PayPal order —

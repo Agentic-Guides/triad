@@ -1,5 +1,5 @@
 /**
- * Anna Pays Tuesday — Consensus Receipt
+ * Tuesday — Consensus Receipt
  *
  * 合意（または対立）の結果を、改ざん不能な監査証跡として固定する。
  *

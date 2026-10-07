@@ -1,5 +1,5 @@
 /**
- * Anna Pays Tuesday + Channel3 integration.
+ * Tuesday + Channel3 integration.
  *
  * Flow: user names a category → Channel3 returns real product candidates →
  * The Advocate argues for the best one, the Auditor checks it against the

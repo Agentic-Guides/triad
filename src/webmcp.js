@@ -1,5 +1,5 @@
 /**
- * Anna Pays Tuesday — WebMCP Tool Registration
+ * Tuesday — WebMCP Tool Registration
  *
  * Exposes the adversarial adjudication + PayPal settlement as WebMCP tools,
  * so any WebMCP-capable AI agent (Chrome 146+) can invoke it from a web page.
@@ -192,11 +192,11 @@ export function createTriad({ runner, paypal } = {}) {
 }
 
 /**
- * Register Anna Pays Tuesday as WebMCP tools on the current page.
+ * Register Tuesday as WebMCP tools on the current page.
  */
 export function registerTriadWebMCP(triad = createTriad()) {
   if (typeof navigator === 'undefined' || !('modelContext' in navigator)) {
-    console.warn('[AnnaPaysTuesday] navigator.modelContext unavailable (needs Chrome 146+ WebMCP flag)');
+    console.warn('[Tuesday] navigator.modelContext unavailable (needs Chrome 146+ WebMCP flag)');
     return triad;
   }
   const mc = navigator.modelContext;
@@ -273,6 +273,6 @@ export function registerTriadWebMCP(triad = createTriad()) {
     execute: async (input) => triad.triadVerifyReceipt(input || {}),
   });
 
-  console.log('[AnnaPaysTuesday] Registered 5 WebMCP tools: triadAdjudicate, triadCreateOrder, triadCaptureOrder, triadGetLedger, triadVerifyReceipt');
+  console.log('[Tuesday] Registered 5 WebMCP tools: triadAdjudicate, triadCreateOrder, triadCaptureOrder, triadGetLedger, triadVerifyReceipt');
   return triad;
 }

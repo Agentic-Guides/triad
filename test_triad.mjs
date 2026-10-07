@@ -1,5 +1,5 @@
 /**
- * Anna Pays Tuesday end-to-end test (deterministic engine — no API key needed).
+ * Tuesday end-to-end test (deterministic engine — no API key needed).
  * Proves the adjudication + PayPal mock flow works.
  */
 import { createTriad } from './src/webmcp.js';
@@ -83,5 +83,5 @@ const triad = createTriad();
   const ledger = triad.triadGetLedger();
   show('Ledger', { count: ledger.count, entries: ledger.entries.map(e => ({ decision: e.decision, summary: e.summary })) });
 
-  console.log('\n✅ All Anna Pays Tuesday tests complete');
+  console.log('\n✅ All Tuesday tests complete');
 })();

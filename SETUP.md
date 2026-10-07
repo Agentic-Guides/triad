@@ -1,4 +1,4 @@
-# SETUP — Running Anna Pays Tuesday
+# SETUP — Running Tuesday
 
 The project runs in **two modes**: `MOCK` (no credentials needed — the demo always runs) and
 `SANDBOX` (real PayPal sandbox orders). Judges can use either.

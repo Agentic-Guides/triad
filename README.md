@@ -1,12 +1,12 @@
-# Anna Pays Tuesday
+# Tuesday
 
-> **When a subscription renewal fails at 3 AM, three AI agents debate whether to retry, downgrade, or let the customer go — and a real PayPal subscription is updated on their consensus. The brand approves. The customer can object. The proof is stamped into the payment record.**
+> **Anna's skincare brand bills $42 a month to 12,000 subscribers. Tuesday, 3 AM: a renewal fails. Three AI agents debate whether to retry, downgrade, or let the customer go — and a real PayPal subscription is updated on their consensus. The brand approves. The customer can object. The proof is stamped into the payment record.**
 
 A working prototype for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/).
 
 **Sponsor tools used:** PayPal ✅ · AG Grid ✅ · Bryntum ✅ · Channel3 ✅
 
-> **Anna Pays Tuesday runs on the official PayPal Agent Toolkit (MCP) — the same `@paypal/mcp` server PayPal ships — plus PayPal Orders v2 REST and Subscriptions v1. Three independent LLMs decide; PayPal settles. Nothing is renewed unless the three agents agree and a human signs off.**
+> **Tuesday runs on the official PayPal Agent Toolkit (MCP) — the same `@paypal/mcp` server PayPal ships — plus PayPal Orders v2 REST and Subscriptions v1. Three independent LLMs decide; PayPal settles. Nothing is renewed unless the three agents agree and a human signs off.**
 
 ---
 
@@ -51,7 +51,7 @@ churn is involuntary** — the customer never chose to leave; the payment just f
 *"a payments-infrastructure problem with a technical fix."* For a brand billing real customers, that
 is the difference between a recovered subscriber and a silent loss.
 
-## What Anna Pays Tuesday does
+## What Tuesday does
 
 **It puts three independent AI agents on the failed-renewal path, and makes PayPal the place the
 decision lands.**
@@ -92,7 +92,7 @@ Tuesday 03:00 — a subscription renewal fails (card declined)
         ↓
 PayPal reports the failure
         ↓
-Anna Pays Tuesday's tribunal (3 independent LLMs, 3 vendors)
+Tuesday's tribunal (3 independent LLMs, 3 vendors)
    Advocate : "retry — this subscriber has paid 14 months in a row"
    Auditor  : "against — third failure this quarter, the card is dead"
    Witness  : "conditional — retry once, then downgrade"
@@ -253,7 +253,7 @@ node demo/server.mjs
 ## Impact
 
 Recurring billing is where PayPal makes its money, and **the failure path is where brands lose
-customers.** Anna Pays Tuesday turns a failed renewal into a reviewed, provable, human-approved
+customers.** Tuesday turns a failed renewal into a reviewed, provable, human-approved
 decision — recovered revenue for the brand, and a record the subscriber can trust.
 
 The pattern generalises to *any* high-stakes agent action: subscription changes, refunds, payouts.

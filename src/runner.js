@@ -1,5 +1,5 @@
 /**
- * Anna Pays Tuesday — Agent Runner — connects the 3 agents to LLM providers.
+ * Tuesday — Agent Runner — connects the 3 agents to LLM providers.
  *
  * Provider-agnostic: works with Ollama Cloud (this repo's default), or any
  * OpenAI-compatible endpoint. Falls back to the deterministic reasoning engine

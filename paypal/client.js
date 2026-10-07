@@ -1,5 +1,5 @@
 /**
- * PayPal Integration for Anna Pays Tuesday
+ * PayPal Integration for Tuesday
  *
  * Two modes:
  *   1. LIVE SANDBOX  — uses PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET (sandbox)
@@ -74,7 +74,7 @@ export class PayPalClient {
         },
       ],
       application_context: {
-        brand_name: 'Anna Pays Tuesday',
+        brand_name: 'Tuesday',
         user_action: 'PAY_NOW',
         return_url: options.returnUrl || 'https://example.com/return',
         cancel_url: options.cancelUrl || 'https://example.com/cancel',

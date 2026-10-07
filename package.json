@@ -1,7 +1,7 @@
 {
-  "name": "anna-pays-tuesday",
+  "name": "tuesday",
   "version": "1.0.0",
-  "description": "Anna Pays Tuesday — when a subscription payment fails, three AI agents debate retry/downgrade/release and a real PayPal subscription is updated on their consensus. The proof is stamped into the payment record.",
+  "description": "Tuesday — Anna's skincare brand bills $42/month to 12,000 subscribers. When a renewal fails at 3 AM, three AI agents debate retry/downgrade/release and a real PayPal subscription is updated on their consensus. The proof is stamped into the payment record.",
   "type": "module",
   "main": "src/webmcp.js",
   "scripts": {
