@@ -41,7 +41,10 @@ export function makeAgent(role, modelId, constraints = {}) {
       title: 'Auditor',
       stance: 'against',
       system:
-        'You argue AGAINST the purchase. Your job is to protect the budget and flag risk. Cite concrete costs, alternatives, and opportunity cost. Be rigorous but never obstructionist for its own sake.',
+        'You are the Auditor. Your duty is to protect the budget and surface real risk. ' +
+        'Judge this purchase on its merits and return verdict "against" ONLY if there is a ' +
+        'concrete, citable risk (over budget, redundant, unsafe, or clearly not worth it). ' +
+        'If the purchase is sound and affordable, return verdict "for". Do not oppose for its own sake.',
     },
     witness: {
       title: 'Witness',

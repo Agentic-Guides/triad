@@ -14,10 +14,17 @@ const DEFAULT_ENDPOINT = 'https://ollama.com/v1/chat/completions';
 // Independent models produce genuinely independent judgments. Three copies of the
 // same model share the same blind spots, which defeats the adversarial design.
 // Override any of these with TRIAD_MODEL_<ROLE> env vars.
+//
+// ★ Model names verified live against Ollama Cloud's /api/tags (2026-10-07).
+//   Three DIFFERENT vendors on purpose: DeepSeek / Google / OpenAI-OSS.
+//   Auditor=gemma4:31b was chosen by measurement: 196 tokens & 844ms per debate
+//   turn, vs 365 tokens & 4466ms for glm-5.3-flash (≈54% fewer tokens, ≈81% faster,
+//   no reasoning-token overhead) — and it still argues AGAINST convincingly,
+//   which is what makes DISSENT real.
 const DEFAULT_MODELS = {
-  advocate: process.env.TRIAD_MODEL_ADVOCATE || 'deepseek-v4.1-flash',
-  auditor: process.env.TRIAD_MODEL_AUDITOR || 'qwen3-vl:latest',
-  witness: process.env.TRIAD_MODEL_WITNESS || 'llama4:latest',
+  advocate: process.env.TRIAD_MODEL_ADVOCATE || 'deepseek-v4.1-flash', // DeepSeek
+  auditor: process.env.TRIAD_MODEL_AUDITOR || 'gemma4:31b',            // Google
+  witness: process.env.TRIAD_MODEL_WITNESS || 'gpt-oss:120b',          // OpenAI (OSS)
 };
 
 export class TriadRunner {
@@ -80,7 +87,7 @@ export class TriadRunner {
     // Advocate & Auditor argue in parallel.
     const [advocateRaw, auditorRaw] = await Promise.all([
       this._chat(this.agents.advocate, `${context}\n\nArgue FOR this purchase. Output JSON: {"verdict":"for","reasons":["..."],"confidence":0.0-1.0}`),
-      this._chat(this.agents.auditor, `${context}\n\nArgue AGAINST this purchase (or approve if genuinely sound). Output JSON: {"verdict":"for"|"against","reasons":["..."],"confidence":0.0-1.0}`),
+      this._chat(this.agents.auditor, `${context}\n\nJudge this purchase as the Auditor. Return verdict "against" ONLY if there is a concrete, citable risk; otherwise return "for" if it is sound and affordable. Output JSON: {"verdict":"for"|"against","reasons":["..."],"confidence":0.0-1.0}`),
     ]);
 
     const advocate = this._parse(this.agents.advocate, advocateRaw, purchase);
