@@ -1,5 +1,7 @@
 # Tuesday
 
+[![M8ven Score](https://m8ven.ai/badge/mcp/agentic-guides-triad-1c26hx?v=a384828d0b931b9c0be97b1d979e5dfe)](https://m8ven.ai/mcp/agentic-guides-triad-1c26hx?s=readme)
+
 > **Anna's skincare brand bills $42 a month to 12,000 subscribers. Tuesday, 3 AM: a renewal fails. Three AI agents debate whether to retry, downgrade, or let the customer go — and a real PayPal subscription is updated on their consensus. The brand approves. The customer can object. The proof is stamped into the payment record.**
 
 A working prototype for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/).
