@@ -10,6 +10,28 @@ A working prototype for the [PayPal AI Hackathon](https://paypalaihackathon.devp
 
 > **Tuesday runs on the official PayPal Agent Toolkit (MCP) — the same `@paypal/mcp` server PayPal ships — plus PayPal Orders v2 REST and Subscriptions v1. Three independent LLMs decide; PayPal settles. Nothing is renewed unless the three agents agree and a human signs off.**
 
+![Tuesday — main screen](docs/screenshots/01_main.png)
+
+### Three agents, three models, one decision
+
+`deepseek-v4.1-flash` (Advocate) · `gemma4:31b` (Auditor) · `gpt-oss:120b` (Witness).
+Each argues in its own words, states a confidence, and votes. **Disagreement is surfaced, not hidden.**
+
+| Approved — 2 for · 0 against | Blocked by dissent — 1 for · 2 against |
+|---|---|
+| ![APPROVED — the Tribunal agrees and PayPal settles](docs/screenshots/04_debate.png) | ![DENIED — the Auditor and Witness block an over-budget charge](docs/screenshots/03_denied.png) |
+
+*Left: a $42 renewal the Tribunal approves, with the PayPal approval link. Right: an $842 charge
+against a $20 remaining budget — the Auditor and Witness block it, and the dissent map shows exactly who disagreed.*
+
+### The governance dashboard — every decision, every vote, every hash
+
+![AG Grid ledger with receipt custom_ids](docs/screenshots/07_ledger.png)
+
+| Vote timeline (Bryntum) | Shop flow (Channel3 → Tribunal) |
+|---|---|
+| ![Bryntum timeline — one bar per agent vote](docs/screenshots/05_timeline.png) | ![Shop request and the gold CTA](docs/screenshots/02_shop.png) |
+
 ---
 
 ## In 10 seconds
