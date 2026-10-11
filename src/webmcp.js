@@ -217,7 +217,12 @@ export function registerTriadWebMCP(triad = createTriad()) {
       },
       required: ['amount', 'category'],
     },
-    annotations: { readOnlyHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     execute: async (input) => triad.triadAdjudicate(input || {}),
   });
 
@@ -234,7 +239,12 @@ export function registerTriadWebMCP(triad = createTriad()) {
       },
       required: ['purchaseId'],
     },
-    annotations: { readOnlyHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     execute: async (input) => triad.triadCreateOrder(input || {}),
   });
 
@@ -246,7 +256,12 @@ export function registerTriadWebMCP(triad = createTriad()) {
       properties: { orderId: { type: 'string' } },
       required: ['orderId'],
     },
-    annotations: { readOnlyHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     execute: async (input) => triad.triadCaptureOrder(input || {}),
   });
 
@@ -254,7 +269,12 @@ export function registerTriadWebMCP(triad = createTriad()) {
     name: 'triadGetLedger',
     description: 'Read-only: list every adjudication the tribunal has made, with decision, vote counts, and consensus receipt hash.',
     inputSchema: { type: 'object', properties: {} },
-    annotations: { readOnlyHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     execute: async () => triad.triadGetLedger(),
   });
 
@@ -269,7 +289,12 @@ export function registerTriadWebMCP(triad = createTriad()) {
         purchaseId: { type: 'string', description: 'Or the purchaseId from triadAdjudicate' },
       },
     },
-    annotations: { readOnlyHint: true },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     execute: async (input) => triad.triadVerifyReceipt(input || {}),
   });
 

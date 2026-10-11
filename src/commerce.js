@@ -95,7 +95,12 @@ export function registerTriadCommerceWebMCP(commerce = createTriadCommerce()) {
       },
       required: ['category'],
     },
-    annotations: { readOnlyHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     execute: async (input) => commerce.triadShop(input || {}),
   });
 
