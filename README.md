@@ -159,6 +159,37 @@ tests/channel3.live.mjs      — Live proof against the real Channel3 API
 - `DENIED` — ≥2 agents against → **nothing may be created**
 - `DISSENT` — no consensus → the dissent map is returned to the human
 
+
+## Why three agents cannot corrupt each other
+
+Most multi-agent systems fail for one of two reasons, and Tuesday is built to
+avoid both. (See Anthropic's multi-agent research write-up and Cognition's
+["Don't Build Multi-Agents"](https://cognition.ai/blog/dont-build-multi-agents) —
+the two read together tell you exactly when the pattern holds.)
+
+**1. Share context.** All three agents reason over the *same* purchase object and
+the *same* constraints — `monthlyBudget`, `spentThisMonth`, `recentPurchases`.
+None of them holds private state the others cannot see, so no agent can act on a
+fact the receipt will not contain. The Advocate argues for, the Auditor audits the
+numbers, the Witness judges the split and is the only one allowed to attach
+conditions.
+
+**2. Actions carry implicit decisions.** The agents *read and argue*; they never
+write. Exactly one code path appends to the ledger and exactly one path builds the
+receipt — so two agents can never make mutually invisible edits that collide at
+merge time. Parallel reads are safe; Tuesday has no parallel writes because there
+are no writes to parallelize.
+
+That is what makes the receipt meaningful: the verdict, all three votes, and the
+reasoning fingerprints are hashed together, and the hash is stamped into the
+PayPal order's `custom_id`. If any agent had written independently, the artifact
+could not honestly claim to be the record of the decision.
+
+**What this buys the merchant.** The engine also guarantees behaviour, not just
+structure: with no API key at all (`node test_triad.mjs`) the deterministic
+reasoning layer returns the same verdicts the LLMs do, so the money gate cannot be
+argued around by a model outage or a prompt injection inside a product listing.
+
 ## PayPal Developer Platform usage (depth)
 
 This is not a checkout button. PayPal is the settlement layer the whole model depends on, and it

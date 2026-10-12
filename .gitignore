@@ -8,3 +8,6 @@ Thumbs.db
 dist/
 build/
 *.zip
+*.bak
+*.before*.bak
+devpost-video/

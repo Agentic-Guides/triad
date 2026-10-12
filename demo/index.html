@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tuesday — AI agents renew a merchant's subscriptions through PayPal</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/styles/ag-grid.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/styles/ag-theme-quartz-dark.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/styles/ag-theme-quartz.css">
 <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/dist/ag-grid-community.min.noStyle.js"></script>
 <!-- ★ Bryntum Scheduler (trial) — audit timeline. Pinned version; CDN so deps stay zero. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@bryntum/scheduler-trial@7.3.6/scheduler.css">
@@ -14,9 +14,15 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0 }
   :root {
-    --bg: #0a0b0f; --panel: #14161d; --line: #232733;
-    --adv: #4ade80; --aud: #f87171; --wit: #60a5fa;
-    --gold: #fbbf24; --dim: #7c8698; --txt: #e7ebf3;
+    /* ★ベージュ階層（hai Lab の paper/ink 設計を赤に翻訳） */
+    --bg: #f0eadf;           /* 一番外側＝温かい紙（ベージュ） */
+    --panel-2: #e8e1d3;      /* 沈んだ面（濃いベージュ） */
+    --sunken: #e2dac9;       /* さらに沈む面 */
+    --panel: #ffffff;        /* カード＝純白で浮かせる */
+    --line: #d9d0bd;         /* 罫線（ベージュ寄り） */
+    --line-2: #c9bfa9;       /* 強めの罫線 */
+    --adv: #15803d; --aud: #be123c; --wit: #1d4ed8;
+    --gold: #c0203c; --dim: #5c554b; --txt: #241f1a;
   }
   body { background: var(--bg); color: var(--txt); font: 16px/1.6 -apple-system, "Segoe UI", sans-serif; min-height: 100vh; padding: 24px }
   .wrap { max-width: 1120px; margin: 0 auto }
@@ -24,75 +30,75 @@
   h1 { font-size: 34px; letter-spacing: 3px; font-weight: 800;
        background: linear-gradient(90deg, var(--adv), var(--wit), var(--aud));
        -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .sub { color: var(--dim); font-size: 15px; margin-top: 4px }
+  .sub { color: #3d372f; font-size: 15px; margin-top: 4px }
   .tags { margin: 16px 0 24px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-  .tag { font-size: 10px; letter-spacing: .14em; font-weight: 600; color: #d3d9e6; border: 1px solid rgba(255,255,255,.26); background: rgba(255,255,255,.085); padding: 5px 13px; border-radius: 999px; display: inline-flex; align-items: center; }
+  .tag { font-size: 10px; letter-spacing: .14em; font-weight: 700; color: #241f1a; border: 1px solid var(--line); background: var(--sunken); padding: 4px 12px; border-radius: 999px; display: inline-flex; align-items: center; }
   .panel {
     position: relative;
-    background: linear-gradient(180deg, rgba(38,41,52,.95) 0%, rgba(26,28,37,.96) 100%);
-    border: 1px solid rgba(255,255,255,.145);
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.123);
     border-radius: 26px;
     padding: 24px 24px 24px; margin-bottom: 24px;
     box-shadow:
-      0 1px 0 rgba(255,255,255,.06); inset,
+      0 1px 0 rgba(0,0,0,0.051); inset,
       0 26px 60px -34px rgba(88,60,180,.45),
       0 2px 10px -4px rgba(0,0,0,.45);
   }
   /* 上端の光るライン（光が当たっているように見せる） */
   .panel::after {
     content: ""; position: absolute; inset: 0 0 auto 0; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,.22) 30%, rgba(255,255,255,.14) 70%, transparent);
+    background: linear-gradient(90deg, transparent, var(--line) 30%, var(--line) 70%, transparent);
     border-radius: 26px 26px 0 0; pointer-events: none;
   }
   /* 内側のヘアライン（Double-Bezel の「内殻」に相当） */
   .panel::before {
     content: ""; position: absolute; inset: 6px;
-    border: 1px solid rgba(255,255,255,.045);
+    border: 1px solid rgba(0,0,0,0.038);
     border-radius: 20px; pointer-events: none;
   }
   .panel > * { position: relative; z-index: 1; }
   .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--dim); margin-bottom: 12px }
   .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px }
   .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px }
-  .agent { background: #0f1116; border-radius: 10px; padding: 16px; border: 1px solid var(--line); }
+  .agent { background: #ffffff; border-radius: 10px; padding: 16px; border: 1px solid var(--line); }
   .agent.advocate { border-top: 3px solid var(--adv); }
   .agent.auditor { border-top: 3px solid var(--aud); }
   .agent.witness { border-top: 3px solid var(--wit); }
   .agent h3 { font-size: 15px; margin-bottom: 0px }
   .agent .role { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
   .verdict { display:inline-block; margin-top: 8px; font-size:11px; font-weight:700; padding: 4px 8px; border-radius:6px; text-transform:uppercase; }
-  .v-for { background:#0d2a18; color:var(--adv); }
-  .v-against { background:#2a0d0d; color:var(--aud); }
-  .v-neutral { background:#0d1f2a; color:var(--wit); }
-  .reasons { margin-top: 12px; font-size: 16px; color: #b7c0d0; }
+  .v-for { background:#dcfce7; color:var(--adv); }
+  .v-against { background:#fee2e2; color:var(--aud); }
+  .v-neutral { background:#dbeafe; color:var(--wit); }
+  .reasons { margin-top: 12px; font-size: 16px; color: #52525b; }
   .reasons li { margin: 4px 0 4px 16px }
   .conf { margin-top: 8px; font-size:11px; color:var(--dim); }
-  input, select { width: 100%; background:#0f1116; border:1px solid var(--line); color:var(--txt);
+  input, select { width: 100%; background:#ffffff; border:1px solid var(--line); color:var(--txt);
                   padding: 12px 12px; border-radius:9px; font-size:14px; outline:none; }
-  input:focus { border-color:#3b4459; }
+  input:focus { border-color:#a1a1aa; }
   label { display:block; font-size:12px; color:var(--dim); margin-bottom: 4px; text-transform:uppercase; letter-spacing:.8px; }
   .field { margin-bottom: 12px }
   button { width:100%; margin-top: 4px; padding: 12px; border:none; border-radius:9px; font-size:15px; font-weight:700;
-           background: linear-gradient(90deg,#f59e0b,#fbbf24); color:#1a1405; cursor:pointer; letter-spacing:.5px; }
+           background: linear-gradient(90deg,#be123c,#c0203c); color:#fef3c7; cursor:pointer; letter-spacing:.5px; }
   button:hover { filter: brightness(1.08); }
   button:disabled { opacity:.5; cursor:wait; }
-  button.secondary { background:#1c202b; color:var(--txt); }
+  button.secondary { background:var(--sunken); color:var(--txt); }
   .decision { text-align:center; padding: 16px; border-radius:12px; margin-bottom: 16px }
-  .d-APPROVED { background:#0d2a18; border:1px solid #1d5c34; }
-  .d-CONDITIONAL { background:#2a240d; border:1px solid #5c4a1d; }
-  .d-DENIED { background:#2a0d0d; border:1px solid #5c1d1d; }
-  .d-DISSENT { background:#2a1a0d; border:1px solid #5c3a1d; }
+  .d-APPROVED { background:#dcfce7; border:1px solid #166534; }
+  .d-CONDITIONAL { background:#92400e; border:1px solid #b45309; }
+  .d-DENIED { background:#fee2e2; border:1px solid #991b1b; }
+  .d-DISSENT { background:#9a3412; border:1px solid #c2410c; }
   .decision .big { font-size:26px; font-weight:800; letter-spacing:2px; }
   .vote { color:var(--dim); font-size:12px; margin-top: 4px }
-  .map { background:#0f1116; border-left:3px solid var(--gold); padding: 12px; border-radius:8px; margin-top: 12px }
+  .map { background:#ffffff; border-left:3px solid var(--gold); padding: 12px; border-radius:8px; margin-top: 12px }
   .map h4 { font-size:12px; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin-bottom: 8px }
   .map-row { font-size:13px; margin: 4px 0 }
-  .pill { font-size:10px; padding: 0px 8px; border-radius:99px; background:#1c202b; color:var(--dim); }
+  .pill { font-size:10px; padding: 0px 8px; border-radius:99px; background:var(--sunken); color:var(--dim); }
   .hidden { display:none; }
   a { color: var(--gold); }
   .tabbar { display:flex; gap: 8px; justify-content:center; margin: 0 0 24px }
-  .tab { padding: 8px 16px; border-radius:8px; background:#1c202b; color:var(--dim); cursor:pointer; font-size:13px; font-weight:600; }
-  .tab.active { background:#fbbf24; color:#1a1405; }
+  .tab { padding: 8px 16px; border-radius:8px; background:var(--sunken); color:#241f1a; cursor:pointer; font-size:13px; font-weight:700; }
+  .tab.active { background:#c0203c; color:#ffffff; border-color:#c0203c; }
   #candidateGrid, #ledgerGrid, #auditGrid {
     width: 100%;
     height: 420px;
@@ -100,21 +106,21 @@
   /* ★ AG Grid dashboard — governance metrics */
   #auditGrid { width: 100%; height: 460px; }
   .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap: 12px; margin-bottom: 12px }
-  .metric { background:#0f1116; border:1px solid var(--line); border-radius:10px; padding: 12px }
-  .metric .k { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; }
+  .metric { background:#ffffff; border:1px solid var(--line); border-radius:10px; padding: 12px }
+  .metric .k { font-size:11px; color:#241f1a; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
   .metric .v { font-size:26px; font-weight:800; margin-top: 4px }
   .metric .u { font-size:11px; color:var(--dim); }
   .votechip { display:inline-block; font-size:10px; font-weight:700; padding: 0px 8px; border-radius:6px; margin-right: 4px }
-  .vc-for { background:#0d2a18; color:var(--adv); }
-  .vc-against { background:#2a0d0d; color:var(--aud); }
-  .vc-neutral { background:#0d1f2a; color:var(--wit); }
-  .receipt { background:#0f1116; border:1px solid var(--line); border-radius:10px; padding: 16px; margin-top: 12px }
+  .vc-for { background:#dcfce7; color:var(--adv); }
+  .vc-against { background:#fee2e2; color:var(--aud); }
+  .vc-neutral { background:#dbeafe; color:var(--wit); }
+  .receipt { background:#ffffff; border:1px solid var(--line); border-radius:10px; padding: 16px; margin-top: 12px }
   .receipt h4 { font-size:12px; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin-bottom: 8px }
   .kv { display:grid; grid-template-columns:150px 1fr; gap: 4px 12px; font-size:14px; }
   .kv .k { color:var(--dim); }
   .kv .v { font-family:ui-monospace,Menlo,Consolas,monospace; word-break:break-all; }
   /* AG Grid: レシート列はツールチップで全文を見せる（セルは壊さない） */
-  .ag-theme-quartz-dark .ag-cell[col-id='receipt'] {
+  .ag-theme-quartz .ag-cell[col-id='receipt'] {
     font-family: ui-monospace, Menlo, Consolas, monospace;
     font-size: 12px;
   }
@@ -124,20 +130,20 @@
   .verify-bar button { width:auto; padding: 8px 16px; font-size:13px; margin: 0 }
   .verdict-line { font-size:13px; margin-top: 8px }
   /* ★ Bryntum dispute-triage flag: unresolved case = must not be missed */
-  .b-sch-event.triage-flag { outline:2px solid #fbbf24; outline-offset:1px; box-shadow:0 0 10px rgba(251,191,36,.55); }
+  .b-sch-event.triage-flag { outline:2px solid #c0203c; outline-offset:1px; box-shadow:0 0 10px rgba(251,191,36,.55); }
   /* Force dark theme (robust across AG Grid versions) */
-  .ag-theme-quartz-dark, .ag-theme-quartz-dark .ag-root-wrapper { background:#0f1116; }
-  .ag-theme-quartz-dark .ag-header { background:#161a22 !important; border-bottom:1px solid var(--line); }
-  .ag-theme-quartz-dark .ag-header-cell, .ag-theme-quartz-dark .ag-header-group-cell { color:var(--dim) !important; font-weight:600; }
-  .ag-theme-quartz-dark .ag-row { background:#0f1116 !important; color:var(--txt) !important; border-color:#1a1e27 !important; }
-  .ag-theme-quartz-dark .ag-row-odd { background:#12151c !important; }
-  .ag-theme-quartz-dark .ag-row:hover { background:#1a1f2b !important; }
-  .ag-theme-quartz-dark .ag-cell { color:var(--txt) !important; }
-  .ag-theme-quartz-dark .ag-body, .ag-theme-quartz-dark .ag-center-cols-viewport,
-  .ag-theme-quartz-dark .ag-body-viewport { background:#0f1116 !important; }
-  .ag-theme-quartz-dark .ag-root-wrapper { border:1px solid var(--line) !important; border-radius:10px; }
-  .reco { background:#0d2a18; border:1px solid #1d5c34; border-radius:10px; padding: 12px; margin-bottom: 12px }
-  .reco.cond { background:#2a240d; border-color:#5c4a1d; }
+  .ag-theme-quartz, .ag-theme-quartz .ag-root-wrapper { background:#ffffff; }
+  .ag-theme-quartz .ag-header { background:var(--panel-2) !important; border-bottom:1px solid var(--line); }
+  .ag-theme-quartz .ag-header-cell, .ag-theme-quartz .ag-header-group-cell { color:#241f1a !important; font-weight:700; }
+  .ag-theme-quartz .ag-row { background:#ffffff !important; color:var(--txt) !important; border-color:#fafafa !important; }
+  .ag-theme-quartz .ag-row-odd { background:var(--panel-2) !important; }
+  .ag-theme-quartz .ag-row:hover { background:var(--sunken) !important; }
+  .ag-theme-quartz .ag-cell { color:var(--txt) !important; }
+  .ag-theme-quartz .ag-body, .ag-theme-quartz .ag-center-cols-viewport,
+  .ag-theme-quartz .ag-body-viewport { background:#ffffff !important; }
+  .ag-theme-quartz .ag-root-wrapper { border:1px solid var(--line) !important; border-radius:10px; }
+  .reco { background:#dcfce7; border:1px solid #166534; border-radius:10px; padding: 12px; margin-bottom: 12px }
+  .reco.cond { background:#92400e; border-color:#b45309; }
   .reco .t { font-size:15px; font-weight:700; }
   .reco .p { color:var(--gold); font-size:20px; font-weight:800; }
 
@@ -146,7 +152,7 @@
      ★ Ethereal Glass レイヤー（2026-10-10 v2）
      high-end-visual-design スキル準拠:
        - フォント: Plus Jakarta Sans（Geist 代替・Inter 禁止）
-       - 配色: OLED #050505 + radial mesh gradient（紫/緑の光球）
+       - 配色: OLED #18181b + radial mesh gradient（紫/緑の光球）
        - 影: 黒ベタ禁止 → 背景の色味を帯びた影（青紫寄り）
        - 遷移: custom cubic-bezier（linear/ease-in-out 禁止）
        - blur: 固定/ヘッダのみ（スクロール要素には当てない）
@@ -159,9 +165,8 @@
   body {
     font-family: "Plus Jakarta Sans", -apple-system, "Segoe UI", sans-serif;
     background:
-      radial-gradient(1100px 700px at 50% -20%, rgba(148,163,184,.075), transparent 64%),
-      radial-gradient(860px 540px at 94% 4%, rgba(129,140,248,.055), transparent 66%),
-      #0c0e13;
+      radial-gradient(1100px 700px at 50% -20%, rgba(225,29,72,.035), transparent 64%),
+      radial-gradient(860px 540px at 94% 4%, rgba(148,163,184,.05), transparent 66%), #f0eadf;
     background-attachment: fixed;
     padding: 48px 24px 96px;
     letter-spacing: .01em;
@@ -175,64 +180,39 @@
     letter-spacing: -.028em;
     line-height: .96;
     font-weight: 800;
-    background: linear-gradient(180deg, #f4f5f8 0%, #c9cede 62%, #9aa3bd 100%);
+    background: linear-gradient(180deg, #18181b 0%, #52525b 62%, #52525b 100%);
     -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 12px 40px rgba(0,0,0,.55));
   }
-  .sub { font-size: 15px; line-height: 1.75; color: #98a2b8; max-width: 68ch; margin: 16px auto 0; text-wrap: balance; }
+  .sub { font-size: 15px; line-height: 1.75; color: #3d372f; max-width: 68ch; margin: 16px auto 0; text-wrap: balance; }
   header { margin-bottom: 48px }
 
   /* ── Eyebrow Tag（見出しの前の微小バッジ）───────────────────── */
   .tags { margin: 16px 0 24px; gap: 8px; justify-content: center }
-  .tag {
-    display: inline-flex; align-items: center;
-    font-size: 10px; text-transform: uppercase; letter-spacing: .14em; font-weight: 600;
-    color: #d3d9e6; border: 1px solid rgba(255,255,255,.26);
-    background: rgba(255,255,255,.085); padding: 5px 13px; border-radius: 999px;
-    transition: border-color .28s cubic-bezier(.32,.72,0,1), background-color .28s cubic-bezier(.32,.72,0,1);
-  }
-  .tag:hover { border-color: rgba(255,255,255,.42); background: rgba(255,255,255,.12); }
+  .tag { display:inline-flex; align-items:center; font-size:10px; text-transform:uppercase; letter-spacing:.14em; font-weight:700; color:#3f3a33; border:1px solid var(--line-2); background:var(--sunken); padding:4px 12px; border-radius:999px; }
+  .tag:hover { border-color: #a1a1aa; background: var(--line); }
 
   /* ── Double-Bezel（外殻 + 内殻）────────────────────────────── */
-  .panel {
-    background: rgba(255,255,255,.055);
-    border: 1px solid rgba(255,255,255,.145);
-    border-radius: 30px;
-    padding: 8px; margin-bottom: 24px;
-    box-shadow:
-      0 1px 1px rgba(255,255,255,.055); inset,
-      0 24px 60px -34px rgba(90,60,180,.42),
-      0 2px 10px -4px rgba(0,0,0,.5);
-  }
+  .panel { background: #ffffff; border:1px solid var(--line); border-radius:30px; padding:8px; margin-bottom:24px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
   .panel h2 {
     font-size: 11px; text-transform: uppercase; letter-spacing: .2em;
-    color: #8b93a8; font-weight: 600; margin-bottom: 16px
+    color: #241f1a; font-weight: 600; margin-bottom: 16px
   }
 
   /* ── カード（エージェント）：内殻も二重に ────────────────────── */
-  .agent {
-    background: rgba(255,255,255,.065);
-    border: 1px solid rgba(255,255,255,.13);
-    border-radius: 20px; padding: 16px 16px;
-    border-top-width: 1px;
-    position: relative; overflow: hidden;
-    box-shadow: 0 14px 34px -22px rgba(0,0,0,.85);
-    transition: transform 0.28s cubic-bezier(.32,.72,0,1),
-                border-color 0.30s cubic-bezier(.32,.72,0,1),
-                box-shadow 0.30s cubic-bezier(.32,.72,0,1);
-  }
+  .agent { background:#ffffff; border:1px solid var(--line); border-radius:20px; padding:16px 16px; }
   .agent::before {
     content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
     background: linear-gradient(90deg, transparent, currentColor 30%, currentColor 70%, transparent);
     opacity: .6;
   }
-  .agent.advocate { color: #4ade80; }
-  .agent.auditor  { color: #f87171; }
-  .agent.witness  { color: #60a5fa; }
-  .agent h3 { font-size: 16px; font-weight: 700; letter-spacing: -.01em; color: #e9edf5; }
-  .agent .role { font-size: 10px; color: #7d879b; letter-spacing: .14em; font-weight: 600; }
-  .agent:hover { transform: translateY(-3px); border-color: rgba(255,255,255,.15); }
+  .agent.advocate { color: #15803d; }
+  .agent.auditor  { color: #be123c; }
+  .agent.witness  { color: #1d4ed8; }
+  .agent h3 { font-size: 16px; font-weight: 700; letter-spacing: -.01em; color: #241f1a; }
+  .agent .role { font-size: 10px; color: #52525b; letter-spacing: .14em; font-weight: 600; }
+  .agent:hover { transform: translateY(-3px); border-color: var(--line-2); }
   .agent.advocate:hover { box-shadow: 0 22px 46px -22px rgba(74,222,128,.42); }
   .agent.auditor:hover  { box-shadow: 0 22px 46px -22px rgba(248,113,113,.42); }
   .agent.witness:hover  { box-shadow: 0 22px 46px -22px rgba(96,165,250,.42); }
@@ -241,10 +221,10 @@
   button {
     border-radius: 999px; padding: 16px 24px; font-size: 14.5px; font-weight: 700;
     letter-spacing: -.005em;
-    background: linear-gradient(180deg, #f6d488 0%, #e0b45c 52%, #c8993f 100%);
+    background: linear-gradient(180deg, #be123c 0%, #be123c 52%, #c8993f 100%);
     color: #241a06;
     color: #fbfbfe;
-    box-shadow: 0 1px 1px rgba(255,255,255,.38); inset,
+    box-shadow: 0 1px 1px rgba(0,0,0,0.323); inset,
                 0 10px 28px -14px rgba(200,153,63,.60),
                 0 2px 8px -3px rgba(0,0,0,.45);
     transition: transform 0.28s cubic-bezier(.32,.72,0,1),
@@ -252,50 +232,33 @@
                 filter 0.30s cubic-bezier(.32,.72,0,1);
   }
   button:not(:disabled):hover { transform: translateY(-2px); filter: brightness(1.07);
-    box-shadow: 0 1px 1px rgba(255,255,255,.3); inset, 0 20px 44px -16px rgba(124,92,246,.85); }
+    box-shadow: 0 1px 1px rgba(0,0,0,0.255); inset, 0 20px 44px -16px rgba(124,92,246,.85); }
   button:not(:disabled):active { transform: translateY(0) scale(.985); }
-  button.secondary {
-    background: rgba(255,255,255,.05); color: #dbe1ec;
-    border: 1px solid rgba(255,255,255,.11); box-shadow: none;
-  }
-  button.secondary:hover { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.2);
-    box-shadow: 0 14px 30px -18px rgba(0,0,0,.9); }
+  button.secondary { background:#ffffff; color:#241f1a; border:1px solid var(--line); box-shadow:none; }
+  button.secondary:hover { background:var(--sunken); border-color:#a1a1aa; box-shadow:0 2px 6px rgba(0,0,0,.06); }
 
   /* ── タブ ─────────────────────────────────────────────────── */
   .tabbar { gap: 8px; justify-content: center; margin: 0 0 24px }
-  .tab {
-    border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600;
-    background: rgba(255,255,255,.045); color: #8b93a8;
-    border: 1px solid rgba(255,255,255,.07);
-    transition: all 0.28s cubic-bezier(.32,.72,0,1);
-  }
-  .tab:hover { color: #e9edf5; border-color: rgba(255,255,255,.18); }
-  .tab.active {
-    background: rgba(255,255,255,.10); color: #f2f4f8;
-    border-color: rgba(255,255,255,.26); box-shadow: 0 8px 20px -12px rgba(0,0,0,.7);
-  }
+  .tab { border-radius:999px; padding:8px 16px; font-size:13px; font-weight:700; background:var(--sunken); color:#2b2722; border:1px solid var(--line-2); transition:all .28s cubic-bezier(.32,.72,0,1); }
+  .tab:hover { color: #241f1a; border-color: var(--line-2); }
+  .tab.active { background: #c0203c; color: #ffffff; border-color: #c0203c; box-shadow: 0 8px 20px -14px rgba(207,31,63,.55); }
 
   /* ── 入力 ─────────────────────────────────────────────────── */
   input, select {
-    background: rgba(255,255,255,.055); border: 1px solid rgba(255,255,255,.085);
-    border-radius: 14px; padding: 12px 12px; color: #e9edf5; font-size: 14px;
+    background: #ffffff; border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px 14px; color: #241f1a; font-size: 16px; font-weight: 500;
     transition: all 0.28s cubic-bezier(.32,.72,0,1);
   }
-  input:hover, select:hover { border-color: rgba(255,255,255,.17); }
-  input:focus, select:focus { border-color: rgba(167,139,250,.65);
-    box-shadow: 0 0 0 3px rgba(139,92,246,.16); }
-  label { font-size: 12px; letter-spacing: .16em; color: #8b93a8; font-weight: 600; }
+  input:hover, select:hover { border-color: var(--line-2); }
+  input:focus, select:focus { border-color: #c0203c;
+    box-shadow: 0 0 0 3px rgba(192,32,60,.16); }
+  label { font-size: 12px; letter-spacing: .12em; color: #241f1a; font-weight: 700; }
 
   /* ── メトリクス／レシート ─────────────────────────────────── */
-  .metric, .receipt {
-    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14);
-    border-radius: 18px;
-    box-shadow: 0 16px 36px -26px rgba(0,0,0,.9);
-    transition: all 0.28s cubic-bezier(.32,.72,0,1);
-  }
-  .metric:hover { border-color: rgba(255,255,255,.16); transform: translateY(-2px); }
-  .metric .v { font-size: 30px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: #eef1f6; }
-  .metric .k, .metric .u { font-size: 10px; letter-spacing: .16em; color: #98a0b3; }
+  .metric, .receipt { background:#ffffff; border:1px solid var(--line); border-radius:18px; box-shadow:0 1px 2px rgba(0,0,0,.04); transition:all .28s cubic-bezier(.32,.72,0,1); }
+  .metric:hover { border-color: var(--line-2); transform: translateY(-2px); }
+  .metric .v { font-size: 30px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: #241f1a; }
+  .metric .k, .metric .u { font-size: 10px; letter-spacing: .12em; color: #241f1a; }
   .kv .v { font-variant-numeric: tabular-nums; }
   .receipt h4 { font-size: 10px; letter-spacing: .18em; color: #a7aec0; }
 
@@ -344,21 +307,19 @@
   /* ── 固定オーバーレイ（grain + 上端ヘアライン）────────────── */
   body::before {
     content: ""; position: fixed; inset: 0; z-index: 60; pointer-events: none;
-    background-image:
-      repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px),
-      repeating-linear-gradient(90deg, rgba(255,255,255,.010) 0 1px, transparent 1px 3px);
+    background-image:none;
     mix-blend-mode: overlay;
   }
   body::after {
     content: ""; position: fixed; inset: 0 0 auto 0; height: 1px; z-index: 61; pointer-events: none;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,.22) 24%, rgba(255,255,255,.22) 76%, transparent);
+    background: linear-gradient(90deg, transparent, var(--line) 24%, var(--line) 76%, transparent);
   }
 
   /* ── スクロールバー ──────────────────────────────────────── */
   ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-track { background: #06060a; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.09); border-radius: 999px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.18); }
+  ::-webkit-scrollbar-track { background: var(--sunken); }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
 
   /* ── アクセシビリティ ────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
@@ -392,13 +353,12 @@
   .btn-ico {
     display: inline-flex; align-items: center; justify-content: center;
     width: 26px; height: 26px; border-radius: 999px;
-    background: rgba(255,255,255,.18);
-    box-shadow: inset 0 1px 1px rgba(255,255,255,.28);
+    background:rgba(255,255,255,.22); box-shadow:inset 0 1px 1px rgba(255,255,255,.3);
     font-size: 13px; line-height: 1;
     transition: transform 0.28s cubic-bezier(.32,.72,0,1), background-color 0.30s cubic-bezier(.32,.72,0,1);
   }
-  button:hover .btn-ico { transform: translate(2px,-1px) scale(1.06); background: rgba(255,255,255,.26); }
-  button.secondary .btn-ico { background: rgba(255,255,255,.09); }
+  button:hover .btn-ico { transform: translate(2px,-1px) scale(1.06); background: rgba(255,255,255,0.3); }
+  button.secondary .btn-ico { background: var(--sunken); }
 
   /* ③ タブも丸ピルを維持 */
   .tab { border-radius: 999px !important; }
@@ -415,7 +375,7 @@
 
     /* ② タグは少し小さく、でもタップしやすく */
     .tags { gap: 8px; margin-bottom: 12px }
-    .tag { font-size: 9.5px; padding: 5px 11px; }
+    .tag { font-size: 9.5px; padding: 4px 12px; }
 
     /* ③ ★タブバー：折り返しを許可して【文字が潰れない】ように */
     .tabbar {
@@ -468,6 +428,7 @@
     button, button.secondary { font-size: 13px !important; padding: 12px 12px !important }
     .metrics { grid-template-columns: 1fr; }
   }
+.ag-theme-quartz, .ag-theme-quartz-dark { --ag-foreground-color: #241f1a; --ag-background-color: #ffffff; --ag-border-color: var(--line); --ag-header-foreground-color: #241f1a; }
 </style>
 </head>
 <body>
@@ -508,7 +469,7 @@
       <div id="reco"></div>
       <div class="panel">
         <h2>Candidate Products — evaluated by the Tribunal (AG Grid)</h2>
-        <div id="candidateGrid" class="ag-theme-quartz-dark"></div>
+        <div id="candidateGrid" class="ag-theme-quartz"></div>
       </div>
     </div>
   </div>
@@ -564,7 +525,7 @@
       <div class="metric"><div class="k">Blocked by dissent</div><div class="v bad" id="mBlocked">0</div></div>
       <div class="metric"><div class="k">Audit trail</div><div class="v" id="mIntact">—</div><div class="u" id="mIntactU">receipts intact</div></div>
     </div>
-    <div id="auditGrid" class="ag-theme-quartz-dark"></div>
+    <div id="auditGrid" class="ag-theme-quartz"></div>
     <div id="receiptWrap"></div>
   </div>
 </div>
@@ -612,7 +573,7 @@ function initCandidateGrid() {
       { field: 'rating', headerName: 'Rating', flex: 1, minWidth: 80 },
       { field: 'decision', headerName: 'Tribunal', flex: 1.2, minWidth: 120,
         cellStyle: p => ({ fontWeight:'700',
-          color: p.value==='APPROVED'?'#4ade80':p.value==='DENIED'?'#f87171':p.value==='CONDITIONAL'?'#fbbf24':'#60a5fa' }) },
+          color: p.value==='APPROVED'?'#15803d':p.value==='DENIED'?'#be123c':p.value==='CONDITIONAL'?'#c0203c':'#1d4ed8' }) },
     ],
     rowData: [],
     defaultColDef: { sortable: true, filter: true, resizable: true },
@@ -632,22 +593,23 @@ function voteChips(votes) {
 function initLedgerGrid() {
   ledgerGridApi = agGrid.createGrid(document.getElementById('auditGrid'), {
     columnDefs: [
-      { field: 'at', headerName: 'Time', flex: 1.3, minWidth: 90,
+      { field: 'at', headerName: 'Time', width: 100, minWidth: 92,
         valueFormatter: p => new Date(p.value).toLocaleTimeString() },
-      { field: 'category', headerName: 'Item', flex: 2.2, minWidth: 260,
+      { field: 'category', headerName: 'Item', flex: 2.0, minWidth: 200,
         tooltipField: 'category',
-        valueFormatter: p => String(p.value ?? '').length > 34
-          ? String(p.value).slice(0, 33) + '…' : p.value },
-      { field: 'amount', headerName: 'Amount', flex: 0.8, minWidth: 80,
+        valueFormatter: p => String(p.value ?? '').length > 26
+          ? String(p.value).slice(0, 25) + '…' : p.value },
+      { field: 'amount', headerName: 'Amount', width: 92, minWidth: 84,
         valueFormatter: p => '$' + Number(p.value).toLocaleString() },
-      { field: 'decision', headerName: 'Decision', flex: 1.1, minWidth: 110,
+      { field: 'decision', headerName: 'Decision', width: 116, minWidth: 106,
         cellStyle: p => ({ fontWeight:'700',
-          color: p.value==='APPROVED'?'#4ade80':p.value==='DENIED'?'#f87171':p.value==='CONDITIONAL'?'#fbbf24':'#60a5fa' }) },
-      { field: 'summary', headerName: 'Consensus / Dissent', flex: 2.2, minWidth: 170,
-        tooltipField: 'summary' },
-      { field: 'customId', headerName: 'Receipt (custom_id)', flex: 1.7, minWidth: 210,
+          color: p.value==='APPROVED'?'#15803d':p.value==='DENIED'?'#be123c':p.value==='CONDITIONAL'?'#c0203c':'#1d4ed8' }) },
+      { field: 'summary', headerName: 'Consensus / Dissent', flex: 2.4, minWidth: 210,
+        tooltipField: 'summary',
+        valueFormatter: p => String(p.value ?? '').replace(/ → /g, '→') },
+      { field: 'customId', headerName: 'Receipt (custom_id)', flex: 1.6, minWidth: 190,
         tooltipField: 'customId',
-        cellStyle: () => ({ fontFamily:'ui-monospace,Menlo,Consolas,monospace', fontSize:'12px' }) },
+        cellStyle: () => ({ fontFamily:'ui-monospace,Menlo,Consolas,monospace', fontSize:'11.5px' }) },
     ],
     rowData: [],
     defaultColDef: { sortable: true, filter: true, resizable: true },
@@ -766,7 +728,7 @@ function initScheduler() {
   if (!host) return;
   // CDN unreachable (or already built) → the rest of the demo still works.
   if (typeof bryntum === 'undefined' || !bryntum.scheduler) {
-    host.innerHTML = '<div style="padding: 16pxcolor:#7c8698">Bryntum Scheduler unavailable (CDN blocked). The rest of the demo is unaffected.</div>';
+    host.innerHTML = '<div style="padding: 16pxcolor:#52525b">Bryntum Scheduler unavailable (CDN blocked). The rest of the demo is unaffected.</div>';
     return;
   }
   const { resources, events } = ledgerToSchedulerData(__ledger);

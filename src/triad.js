@@ -113,15 +113,42 @@ export function deterministicReason(agent, purchase) {
   if (agent.role === ROLES.AUDITOR) {
     const reasons = [];
     let verdict = 'against';
+
+    // ★ An unquantified purchase cannot be audited. Refuse rather than approve
+    //   something whose cost is unknown or zero — that is exactly the kind of
+    //   silent pass an audit trail is supposed to prevent.
+    if (!(amount > 0)) {
+      reasons.push(`No amount to audit: price is ${fmt(amount)}. A purchase must carry a positive amount.`);
+      return mkArgument(agent, 'against', reasons, { confidence: 0.9 });
+    }
+
     if (c.monthlyBudget != null) {
       const remaining = c.monthlyBudget - (c.spentThisMonth ?? 0);
       if (amount > remaining) {
+        // Hard breach: the money is simply not there.
         reasons.push(`Over budget: price ${fmt(amount)} exceeds remaining ${fmt(remaining)}.`);
       } else {
         reasons.push(`Within budget: ${fmt(amount)} vs remaining ${fmt(remaining)}.`);
         verdict = 'for';
       }
     }
+
+    // ★ Budget-share test — independent of any assumption about recent activity.
+    //   A purchase that eats most of the month's budget deserves scrutiny even
+    //   when the money happens to be available. Without this, a purchase using
+    //   ~90% of the remaining budget slips through as "within budget".
+    const share = c.monthlyBudget ? amount / c.monthlyBudget : null;
+    if (c.monthlyBudget != null && share != null && share > 0.5) {
+      reasons.push(
+        `This purchase uses ${Math.round(share * 100)}% of the monthly budget ` +
+        `(${fmt(amount)} of ${fmt(c.monthlyBudget)}).`
+      );
+      if (verdict === 'for') {
+        verdict = 'against';
+        reasons.push('A single purchase consuming more than half the budget needs justification.');
+      }
+    }
+
     if (c.recentPurchases?.length) {
       reasons.push(`Recent purchase detected: ${c.recentPurchases.join(', ')}. Consider need vs. want.`);
       if (verdict === 'for' && amount > (c.monthlyBudget ?? 0) * 0.25) {
