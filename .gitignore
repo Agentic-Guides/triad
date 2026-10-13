@@ -11,3 +11,8 @@ build/
 *.bak
 *.before*.bak
 devpost-video/
+
+# Editor/rollback backups — never commit these
+*.before-jpg
+*.before-imgsize
+*.before-*

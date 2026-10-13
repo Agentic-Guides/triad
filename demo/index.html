@@ -145,7 +145,7 @@
   .reco { background:#dcfce7; border:1px solid #166534; border-radius:10px; padding: 12px; margin-bottom: 12px }
   .reco.cond { background:#92400e; border-color:#b45309; }
   .reco .t { font-size:15px; font-weight:700; }
-.reco-img { float:left; width:64px; height:64px; border-radius:10px; margin:0 12px 6px 0;
+.reco-img { float:left; width:112px; height:112px; object-fit:cover; border-radius:14px; margin:0 16px 8px 0;
             background:#fff; box-shadow:0 1px 4px rgba(60,45,30,.16) }
 .reco::after { content:''; display:block; clear:both }
   .reco .p { color:var(--gold); font-size:20px; font-weight:800; }
@@ -635,7 +635,7 @@ function initCandidateGrid() {
       // full-size illustration in a ~28px row is what collapsed this grid before.
       { headerName: '', width: 42, minWidth: 42, maxWidth: 42, sortable: false, filter: false,
         cellRenderer: p => p.data && p.data.image
-          ? `<img src="${p.data.image}" alt="" style="width:24px;height:24px;border-radius:5px;vertical-align:middle">`
+          ? `<img src="${p.data.image}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px;vertical-align:middle">`
           : '' },
       { field: 'title', headerName: 'Product', flex: 3, minWidth: 200, tooltipField: 'title' },
       { field: 'brand', headerName: 'Brand', flex: 1, minWidth: 90 },
@@ -818,7 +818,7 @@ function initScheduler() {
     startDate: new Date(now - 6 * 3600e3),
     endDate: new Date(now + 6 * 3600e3),
     viewPreset: 'hourAndDay',
-    rowHeight: 54,
+    rowHeight: 64,
     barMargin: 6,
     columns: [{ field: 'name', text: 'Agent', width: 150 }],
     resources,
