@@ -101,7 +101,7 @@
   .tab.active { background:#c0203c; color:#ffffff; border-color:#c0203c; }
   #candidateGrid, #ledgerGrid, #auditGrid {
     width: 100%;
-    height: 420px;
+    /* height is set by fitGridHeight() from the actual row count */
   }
   /* ★ AG Grid dashboard — governance metrics */
   #auditGrid { width: 100%; height: 460px; }
@@ -422,8 +422,7 @@
     input, select { font-size: 16px !important; padding: 12px 12px; min-height: 50px; }
 
     /* ⑧ AG Grid の高さを詰める */
-    #candidateGrid, #ledgerGrid, #auditGrid { height: 320px; }
-  }
+    }
 
   /* 極小（360px以下）*/
   @media (max-width: 380px) {
@@ -458,12 +457,12 @@
     <div class="panel">
       <h2>Shop Request</h2>
       <div class="grid2">
-        <div class="field"><label>Category</label><input id="category" value="skincare" /></div>
+        <div class="field"><label>Category</label><input id="category" value="electronics" /></div>
         <div class="field"><label>Monthly budget (USD)</label><input id="budget" type="number" value="60" /></div>
       </div>
       <div class="grid2">
         <div class="field"><label>Already spent this month (USD)</label><input id="spent" type="number" value="0" /></div>
-        <div class="field"><label>Max price (USD)</label><input id="maxPrice" type="number" value="60" /></div>
+        <div class="field"><label>Max price (USD)</label><input id="maxPrice" type="number" value="200" /></div>
       </div>
       <button id="shopBtn">🛒 Find products &amp; convene the Tribunal <span class="btn-ico">→</span></button>
     </div>
@@ -536,15 +535,23 @@
 <script>
 
 /* ★AG Grid: 行数に応じて高さを自動調整（1行も見落とさない） */
-function fitGridHeight(gridEl, api) {
+function fitGridHeight(gridEl, api, rowCount) {
   if (!gridEl || !api) return;
-  const ROW = 30;          // 1行の高さ（AG Grid 既定に合わせる）
-  const HEAD = 44;         // ヘッダーの高さ
+  const ROW = 36;          // one data row (AG Grid default row height is 25 + padding)
+  const HEAD = 48;         // header row
   const PAD = 4;
-  const n = api.getDisplayedRowCount ? api.getDisplayedRowCount() : 0;
+  // Use the number of rows we just handed to the grid, not what the grid has
+  // painted. Calling getDisplayedRowCount() right after setGridOption() returns
+  // a stale count (the rows are not laid out yet), so the grid was sized for
+  // one or two rows and the last rows were cut off — including the DENIED row,
+  // which is the whole point of the table.
+  const n = (typeof rowCount === 'number' && rowCount > 0)
+    ? rowCount
+    : (api.getDisplayedRowCount ? api.getDisplayedRowCount() : 0);
   const want = HEAD + Math.max(1, n) * ROW + PAD;
-  const max = Math.round(window.innerHeight * 0.70);   // ★画面の70%を上限
-  gridEl.style.height = Math.min(Math.max(want, 200), max) + 'px';
+  // No artificial minimum and no 70%-of-viewport clamp: a five-row table is
+  // short, and clamping it to 200px is what hid the last two verdicts.
+  gridEl.style.height = want + 'px';
   if (api.doLayout) api.doLayout();
 }
 let candidateGridApi, ledgerGridApi;
@@ -678,7 +685,7 @@ async function refreshLedger() {
     _purchaseId: e.purchase?.id,
   })).reverse();
   if (ledgerGridApi) { ledgerGridApi.setGridOption('rowData', rows);
-    fitGridHeight(document.getElementById('auditGrid'), ledgerGridApi); }
+    fitGridHeight(document.getElementById('auditGrid'), ledgerGridApi, (led.entries || led.entryCount || 0)); }
 
   // ★ Governance metrics
   const total = rows.length;
@@ -810,7 +817,7 @@ document.getElementById('shopBtn').onclick = async () => {
   }
 
   if (candidateGridApi) { candidateGridApi.setGridOption('rowData', r.allResults || []);
-    fitGridHeight(document.getElementById('candidateGrid'), candidateGridApi); }
+    fitGridHeight(document.getElementById('candidateGrid'), candidateGridApi, (r.allResults || []).length); }
   await refreshLedger();
   btn.disabled = false; btn.textContent = '🛒 Find products & convene the Tribunal';
 };
