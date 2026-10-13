@@ -8,9 +8,24 @@ A working prototype for the [PayPal AI Hackathon](https://paypalaihackathon.devp
 
 **Sponsor tools used:** PayPal ✅ · AG Grid ✅ · Bryntum ✅ · Channel3 ✅
 
-> **Tuesday runs on the official PayPal Agent Toolkit (MCP) — the same `@paypal/mcp` server PayPal ships — plus PayPal Orders v2 REST and Subscriptions v1. Three independent LLMs decide; PayPal settles. Nothing is renewed unless the three agents agree and a human signs off.**
+> **Three independent LLMs decide; PayPal settles. Nothing is renewed unless the three agents agree and a human signs off. The decision — including the disagreement — is hashed and stamped into the PayPal order's `custom_id`, so the reason a payment was allowed is readable from the payment record itself.**
 
 ![Tuesday — main screen](docs/screenshots/01_main.png)
+
+### The 5-minute walkthrough
+
+[Demonstration video](devpost-media/tuesday_submission_v8_1080p_hq.mp4) — 5:00, 1080p, no narration.
+Six screenshots are in `devpost-media/`, with the captions they carry in `devpost-media/captions.json`.
+
+### What the agents argue about — the real catalogue
+
+Every product image below is generated for this project (FLUX via Cloudflare Workers AI) and served by
+the demo itself; the demo shows the same files. The Tribunal only sees the shape and the price —
+the label is deliberately blank, because the decision must be about the *purchase*, not the branding.
+
+| Skincare | Supplements | Electronics | Consumables |
+|---|---|---|---|
+| ![Hyaluronic Acid Serum 30ml — $42](docs/screenshots/product_ch3_skin_001.jpg) | ![Creatine Monohydrate 300g — $26](docs/screenshots/product_ch3_supp_004.jpg) | ![USB-C 100W Charger — $54](docs/screenshots/product_ch3_elec_001.jpg) | ![Printer Paper A4 — $12](docs/screenshots/product_ch3_cons_001.jpg) |
 
 ### Three agents, three models, one decision
 
@@ -21,12 +36,12 @@ Each argues in its own words, states a confidence, and votes. **Disagreement is 
 |---|---|
 | ![APPROVED — the Tribunal agrees and PayPal settles](docs/screenshots/04_debate.png) | ![DENIED — the Auditor and Witness block an over-budget charge](docs/screenshots/03_denied.png) |
 
-*Left: a $42 renewal the Tribunal approves, with the PayPal approval link. Right: an $842 charge
-against a $20 remaining budget — the Auditor and Witness block it, and the dissent map shows exactly who disagreed.*
+*Left: a $42 renewal the Tribunal approves, with the PayPal approval link. Right: a $90 charge against a
+$60 monthly budget — the Auditor and Witness block it, and the dissent map shows exactly who disagreed.*
 
 ### The governance dashboard — every decision, every vote, every hash
 
-![AG Grid ledger with receipt custom_ids](docs/screenshots/07_ledger.png)
+![AG Grid ledger with receipt custom_ids](docs/screenshots/06_ledger.png)
 
 | Vote timeline (Bryntum) | Shop flow (Channel3 → Tribunal) |
 |---|---|
@@ -43,7 +58,7 @@ against a $20 remaining budget — the Auditor and Witness block it, and the dis
 | **Why it matters** | **25–40% of subscription churn starts exactly here** — at a failed payment, not a lost customer. |
 | **The idea** | Three AI agents read the failed renewal and argue: **retry**, **downgrade**, or **release**. A consensus updates the subscription through PayPal. The brand approves; the customer can object. |
 | **The novel part** | The decision — *including the disagreement* — is hashed and stamped into the payment record itself. The receipt **is** the audit trail. |
-| **The proof** | Live against the **real PayPal sandbox**: a product, a subscription plan, and a subscription, created through PayPal's own MCP server. No mock. |
+| **The proof** | The settlement path is real: `POST /v2/checkout/orders` against the **PayPal sandbox**, with the decision hash in `custom_id`, read back with `GET` to prove it survived. The demo defaults to MOCK; with your own sandbox keys it runs live (`SETUP.md`). |
 
 ## Who this is for
 
@@ -171,7 +186,7 @@ CONSENSUS?  ── no ──→  nothing is created. The dissent map is returned
         │
        yes
         ↓
-PayPal Agent Toolkit (MCP) + Subscriptions v1 / Orders v2
+PayPal Orders v2 REST + WebMCP (`navigator.modelContext`)
    → the renewal is created through PayPal's MCP server
    → the receipt hash is stamped into custom_id
         ↓
@@ -191,7 +206,7 @@ src/channel3.js    — Channel3 product-catalog adapter (real API)
 src/commerce.js    — Shop flow: Channel3 candidates → tribunal adjudication
 src/webmcp.js      — Registers the tribunal as WebMCP tools + orchestrates PayPal settlement
 paypal/client.js   — PayPal Orders v2 REST client (Sandbox, + deterministic mock fallback)
-paypal/mcpClient.js— PayPal Agent Toolkit (MCP) adapter — the official agent-facing layer
+paypal/client.js — PayPal Orders v2 REST client (OAuth2 token, create/capture/get order)
 demo/server.mjs    — Zero-dependency HTTP server
 demo/index.html    — Demo UI (AG Grid ledger + Bryntum renewal timeline)
 tests/moneyGate.test.js — The money gate, mechanically proven (0 records on non-consensus)
@@ -279,31 +294,21 @@ is used across **five** surfaces:
 
 | Surface | How it is used |
 |---|---|
-| **Agent Toolkit / MCP** (`@paypal/mcp`) | The official agent-facing layer. The agents call **`create_product`, `create_subscription_plan`, `list_subscription_plans`, `create_subscription`, `show_subscription_details`, `cancel_subscription`** through PayPal's own MCP server. |
-| **Orders v2 REST** | Order lifecycle: create → approval link → capture. The ground truth for the money gate. |
-| **Subscriptions v1** | Product → plan → subscription → approval. The recurring-billing path this project is built around. |
-| **Disputes v1** | `list` / `get` — reachable from the same client. |
-| **WebMCP** | Exposes the whole flow as page tools, so any agent browser can drive it. |
+| **Orders v2 REST** (`paypal/client.js`) | The settlement path this demo actually runs: `POST /v1/oauth2/token` → `POST /v2/checkout/orders` with the decision hash in `purchase_units[0].custom_id` → `POST .../capture`, and `GET .../orders/{id}` to read the stamp back. |
+| **Money gate** (`src/webmcp.js`) | `triadCreateOrder()` refuses to call PayPal at all when the decision is DENIED or DISSENT — it returns `not_approved` before any network call. Asserted by `tests/moneyGate.test.js`. |
+| **WebMCP** (`navigator.modelContext`) | Registered in `src/commerce.js` / `src/webmcp.js`, so an agent browser can drive the flow as page tools. |
+| **Not implemented** | Subscriptions v1 and the PayPal Agent Toolkit (`@paypal/mcp`) are not wired up in this demo. The settlement path here is Orders v2 REST; the Agent Toolkit is the integration point this design would move to in production. |
 
-### Proven live through PayPal's own MCP server
+### Prove it yourself against the PayPal sandbox
 
-The claim is not a mock. It was run against the **real PayPal sandbox**, through the **official
-`@paypal/mcp` server** (serverInfo: `PayPal v1.11.0`, 28 tools registered):
+Nothing here is a canned transcript. The script below is in the repo and you can run it with your
+own sandbox credentials (`SETUP.md`); it exercises the exact path the demo uses, no MCP server
+involved:
 
 ```bash
-npx -y @paypal/mcp@1.8.1 --tools=all      # PAYPAL_ACCESS_TOKEN + PAYPAL_ENVIRONMENT=SANDBOX
+export PAYPAL_CLIENT_ID=... PAYPAL_CLIENT_SECRET=...
+node tests/paypalSandbox.live.mjs
 ```
-
-```
-create_product            → PROD-60748010N1494543C
-create_subscription_plan  → P-373849401N470725XNLC2ABY   status=ACTIVE
-create_subscription       → I-1V5J40E95883                status=APPROVAL_PENDING
-   approve: https://www.sandbox.paypal.com/webapps/billing/subscriptions?ba_token=...
-show_subscription_details → status APPROVAL_PENDING, custom_id triad1:annapays01
-list_subscription_plans   → 1 plan
-```
-
-And the same receipt mechanism round-trips through the REST API:
 
 ```
 node tests/paypalSandbox.live.mjs
@@ -382,7 +387,7 @@ node demo/server.mjs
 
 | Tool | How it is used |
 |---|---|
-| **PayPal** | Agent Toolkit / MCP (`create_subscription`, `cancel_subscription`, `create_order`, …) + Orders v2 REST + Subscriptions v1. Sandbox; deterministic fallback when no key. |
+| **PayPal** | Orders v2 REST (`paypal/client.js`): OAuth2 client-credentials token → create order → capture, with the decision hash in `custom_id`. Sandbox by default in MOCK; live with your own keys. Subscriptions v1 / Agent Toolkit are the production integration point, not implemented here. Deterministic fallback when no PayPal keys are present. |no key. |
 | **AG Grid** | The decision ledger — every renewal, every vote, every receipt hash, with a selection-driven receipt panel. |
 | **Bryntum Scheduler** | The renewal timeline — who decided what, when, and which failed renewals are still unresolved. |
 | **Channel3** | Product discovery — grounds the debate in a real, purchasable SKU (real API, no mocks). |

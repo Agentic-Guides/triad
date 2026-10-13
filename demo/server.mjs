@@ -38,7 +38,9 @@ const server = createServer(async (req, res) => {
     }
     try {
       const buf = await readFile(full);
-      const type = name.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+      const type = name.toLowerCase().endsWith('.svg') ? 'image/svg+xml'
+        : name.toLowerCase().endsWith('.jpg') || name.toLowerCase().endsWith('.jpeg') ? 'image/jpeg'
+        : name.toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/png';
       res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' });
       return res.end(buf);
     } catch {
