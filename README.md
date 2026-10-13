@@ -108,14 +108,23 @@ is on a first purchase or a renewal. They return a verdict — **APPROVED**, **C
 
 Open **Direct Adjudication** to run a case of your own. Change the amount or the budget, press
 **Convene the Tribunal**, and watch the verdict move. Every cell below is measured from the running
-demo, not estimated:
+demo with `spentThisMonth = 0`, not estimated:
 
 | Amount | Budget $30 | Budget $60 | Budget $150 | Budget $400 |
 |---|---|---|---|---|
-| **$9** | CONDITIONAL | APPROVED | APPROVED | APPROVED |
-| **$18** | CONDITIONAL | CONDITIONAL | APPROVED | APPROVED |
-| **$42** | DENIED | CONDITIONAL | CONDITIONAL | APPROVED |
+| **$9** | APPROVED | APPROVED | APPROVED | APPROVED |
+| **$18** | CONDITIONAL | APPROVED | APPROVED | APPROVED |
+| **$42** | DENIED | CONDITIONAL | APPROVED | APPROVED |
 | **$90** | DENIED | DENIED | CONDITIONAL | APPROVED |
+
+`spentThisMonth` matters, and the grid above holds it at zero on purpose. Already spending part of
+the month's budget moves every cell one step stricter — $9 against a $30 budget is APPROVED on a
+clean month and CONDITIONAL once $20 of it is gone.
+
+Press **Show me all 16 cells** in the demo and the grid is computed in front of you — sixteen real
+adjudications, not the table copied out of this file.
+
+![The 4x4 verdict grid, reproduced live](docs/screenshots/08_grid.png)
 
 **Both axes move the verdict in the direction you would expect.** A bigger purchase is judged more
 strictly; a bigger budget buys more room; and the $42 renewal that starts the story sits exactly on

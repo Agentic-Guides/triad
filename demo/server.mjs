@@ -85,6 +85,38 @@ const server = createServer(async (req, res) => {
     });
   }
 
+  // Reproduces the README's 4x4 verdict grid by actually adjudicating all sixteen
+  // cases, so a reader can check the table instead of trusting it. The amounts and
+  // budgets are the ones printed in the README; spentThisMonth is held at zero there,
+  // which is why it is zero here. Sixteen sequential HTTP calls from the browser would
+  // work but is pointlessly slow, so the loop lives here.
+  if (req.method === 'GET' && url.pathname === '/api/grid') {
+    const amounts = [9, 18, 42, 90];
+    const budgets = [30, 60, 150, 400];
+    const cell = async (amount, monthlyBudget) => {
+      try {
+        const r = await triad.triadAdjudicate({
+          category: 'Consumer electronics accessory',
+          amount,
+          monthlyBudget,
+          spentThisMonth: 0,
+          kind: 'first_time',
+          recentPurchases: [],
+        });
+        return (r && (r.decision || (r.result && r.result.decision))) || 'UNKNOWN';
+      } catch (e) {
+        return 'ERROR';
+      }
+    };
+    const rows = [];
+    for (const amount of amounts) {
+      const row = [];
+      for (const monthlyBudget of budgets) row.push(await cell(amount, monthlyBudget));
+      rows.push({ amount, verdicts: row });
+    }
+    return json(res, 200, { ok: true, amounts, budgets, spentThisMonth: 0, rows });
+  }
+
   // Preview page used to render the product image sheet for screenshots.
   if (req.method === 'GET' && url.pathname === '/shot.html') {
     const html = await readFile(join(__dir, 'shot.html'), 'utf8');

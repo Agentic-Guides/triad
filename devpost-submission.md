@@ -73,7 +73,7 @@ ledger:
 - **DENIED** — the Auditor and Witness block it, and the dissent map names them.
 
 The 4×4 grid below is measured from the running demo, not estimated — budget across the top,
-charge down the side:
+charge down the side. The demo recomputes it live when you press **Show me all 16 cells**:
 
 | charge \ budget | $30 | $60 | $150 | $400 |
 |---|---|---|---|---|
@@ -118,6 +118,7 @@ We would rather a judge trust us than be surprised.
 | 5 | `05_timeline.png` | One bar per agent vote on the Bryntum timeline — green approved, red blocked, blue neutral. Open disputes stay flagged. |
 | 6 | `06_ledger.png` | Every decision, every vote, every receipt in one AG Grid dashboard. Each row carries the hash stamped into the PayPal order's `custom_id`. |
 | 7 | `07_proof.png` | The money gate is a testable claim, so the demo runs the test. This button executes `tests/moneyGate.test.js` on the machine and prints the raw output: 31 passed, 0 failed. |
+| 8 | `08_grid.png` | The 4×4 verdict grid from the README, reproduced live: sixteen real adjudications, computed when the button is pressed. Charge down the side, budget across the top. |
 
 ## Try it out
 

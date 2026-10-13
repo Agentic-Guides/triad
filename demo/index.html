@@ -147,6 +147,18 @@
   .reco .t { font-size:15px; font-weight:700; }
 .proof-lede { font-size: 13.5px; color: var(--dim); line-height: 1.65; margin: 0 0 16px; max-width: 70ch }
 .proof-lede code { font-size: 12.5px; background: var(--sunken); padding: 1px 5px; border-radius: 5px }
+.btn-secondary { background: var(--panel); color: var(--txt); border: 1px solid var(--line); margin-left: 10px }
+.btn-secondary:hover:not(:disabled) { background: var(--sunken) }
+#gridTable { overflow-x: auto; margin: 18px 0 0 }
+#gridTable table { border-collapse: collapse; font-size: 12.5px; width: 100% }
+#gridTable th, #gridTable td { border: 1px solid var(--line); padding: 9px 10px; text-align: center }
+#gridTable th { background: var(--sunken); font-weight: 700; font-size: 11.5px;
+                text-transform: uppercase; letter-spacing: .04em; color: var(--dim) }
+#gridTable td.amt { background: var(--sunken); font-weight: 700; font-variant-numeric: tabular-nums }
+#gridTable td.v-APPROVED    { background: #dff3e6; color: #14532d; font-weight: 600 }
+#gridTable td.v-CONDITIONAL { background: #fdf0d5; color: #7a4a06; font-weight: 600 }
+#gridTable td.v-DENIED      { background: #fbe0e3; color: #8b1a26; font-weight: 600 }
+#gridTable td.v-unknown     { background: var(--sunken); color: var(--dim) }
 .proof-verdict { font-size: 15px; font-weight: 700; letter-spacing: .01em; margin: 4px 0 14px }
 .proof-verdict.pass { color: #1c7a4a }
 .proof-verdict.fail { color: var(--gold) }
@@ -477,6 +489,15 @@
       this machine, right now, and prints everything it says — pass or fail.
     </p>
     <button id="proofBtn">▶ Run the money-gate test suite</button>
+    <button id="gridBtn" class="btn-secondary">⊞ Show me all 16 cells</button>
+    <div id="gridOut" class="hidden">
+      <div id="gridTable"></div>
+      <p class="proof-note">
+        Sixteen real adjudications, computed just now — not the table copied out of the README.
+        Charge down the side, monthly budget across the top. Spend part of the month first and every
+        cell moves one step stricter.
+      </p>
+    </div>
     <div id="proofOut" class="hidden">
       <div id="proofVerdict" class="proof-verdict"></div>
       <pre id="proofLog"></pre>
@@ -898,7 +919,30 @@ bindRun('proofBtn', { idle: '▶ Run the money-gate test suite', busy: 'Running 
   }
 });
 
-// --- Shop flow ---
+// --- Reproduce the README's 4x4 verdict grid, live ---
+bindRun('gridBtn', { idle: '⊞ Show me all 16 cells', busy: 'Adjudicating 16 cases…' }, async () => {
+  const r = await api('/api/grid');
+  const wrap = document.getElementById('gridTable');
+  document.getElementById('gridOut').classList.remove('hidden');
+  if (!r || !r.rows) {
+    wrap.innerHTML = '<p class="proof-note">Could not compute the grid.</p>';
+    return;
+  }
+  // Build the table from what the server actually returned. The class names map to the
+  // verdict string so an unexpected value renders grey rather than silently looking fine.
+  const cls = (v) => ['APPROVED', 'CONDITIONAL', 'DENIED'].includes(v) ? 'v-' + v : 'v-unknown';
+  let html = '<table><thead><tr><th>Charge</th>';
+  for (const b of r.budgets) html += `<th>Budget $${b}</th>`;
+  html += '</tr></thead><tbody>';
+  for (const row of r.rows) {
+    html += `<tr><td class="amt">$${row.amount}</td>`;
+    for (const v of row.verdicts) html += `<td class="${cls(v)}">${v}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+});
+
 bindRun('shopBtn', { idle: '🛒 Find products & convene the Tribunal', busy: 'Channel3 searching → Tribunal deliberating…' }, async () => {
   const body = {
     category: document.getElementById('category').value,
