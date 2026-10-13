@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tuesday — AI agents renew a merchant's subscriptions through PayPal</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/styles/ag-grid.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/styles/ag-theme-quartz.css">
-<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/dist/ag-grid-community.min.noStyle.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/styles/ag-grid.css" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/styles/ag-theme-quartz.css" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.4/dist/ag-grid-community.min.noStyle.js"></script crossorigin="anonymous">
 <!-- ★ Bryntum Scheduler (trial) — audit timeline. Pinned version; CDN so deps stay zero. -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@bryntum/scheduler-trial@7.3.6/scheduler.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@bryntum/scheduler-trial@7.3.6/stockholm-dark.css">
-<script src="https://cdn.jsdelivr.net/npm/@bryntum/scheduler-trial@7.3.6/scheduler.umd.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@bryntum/scheduler-trial@7.3.6/scheduler.css" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@bryntum/scheduler-trial@7.3.6/stockholm-dark.css" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/@bryntum/scheduler-trial@7.3.6/scheduler.umd.js"></script crossorigin="anonymous">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0 }
   :root {
@@ -557,8 +557,48 @@ function fitGridHeight(gridEl, api, rowCount) {
 let candidateGridApi, ledgerGridApi;
 
 async function api(path, body) {
-  const r = await fetch(path, { method: body ? 'POST' : 'GET', headers: {'Content-Type':'application/json'}, body: body ? JSON.stringify(body) : undefined });
-  return r.json();
+  // A demo that hangs forever is worse than one that fails: the button stays
+  // disabled, every later click is swallowed, and the reviewer sees a frozen
+  // page with no error. Abort instead, and let the caller show what happened.
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 15000);
+  try {
+    const r = await fetch(path, {
+      method: body ? 'POST' : 'GET',
+      headers: {'Content-Type':'application/json'},
+      body: body ? JSON.stringify(body) : undefined,
+      signal: ctl.signal,
+    });
+    if (!r.ok) throw new Error(path + ' returned ' + r.status);
+    return await r.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+// Wrap a click handler so the button always comes back, even when something
+// throws inside — a disabled button with no error message is indistinguishable
+// from a broken demo.
+function bindRun(btnId, label, fn) {
+  const btn = document.getElementById(btnId);
+  btn.onclick = async () => {
+    btn.disabled = true;
+    btn.textContent = label.busy;
+    try {
+      await fn();
+    } catch (e) {
+      console.error(e);
+      const d = document.getElementById('decision');
+      if (d) {
+        d.classList.remove('hidden');
+        d.className = 'decision d-DENIED';
+        d.querySelector('.big').textContent = 'DENIED';
+        d.querySelector('.vote').textContent = 'the tribunal could not be reached: ' + (e && e.message ? e.message : e);
+      }
+    } finally {
+      btn.disabled = false;
+      btn.textContent = label.idle;
+    }
+  };
 }
 const vc = v => v==='for'?'v-for':v==='against'?'v-against':'v-neutral';
 
@@ -685,7 +725,7 @@ async function refreshLedger() {
     _purchaseId: e.purchase?.id,
   })).reverse();
   if (ledgerGridApi) { ledgerGridApi.setGridOption('rowData', rows);
-    fitGridHeight(document.getElementById('auditGrid'), ledgerGridApi, (led.entries || led.entryCount || 0)); }
+    fitGridHeight(document.getElementById('auditGrid'), ledgerGridApi, (l.entries || []).length); }
 
   // ★ Governance metrics
   const total = rows.length;
@@ -790,8 +830,7 @@ document.getElementById('tabDirect').onclick = () => showTab('direct');
 document.getElementById('tabTimeline').onclick = () => showTab('timeline');
 
 // --- Shop flow ---
-document.getElementById('shopBtn').onclick = async () => {
-  const btn = document.getElementById('shopBtn'); btn.disabled = true; btn.textContent = 'Channel3 searching → Tribunal deliberating…';
+bindRun('shopBtn', { idle: '🛒 Find products & convene the Tribunal', busy: 'Channel3 searching → Tribunal deliberating…' }, async () => {
   const body = {
     category: document.getElementById('category').value,
     monthlyBudget: Number(document.getElementById('budget').value),
@@ -819,12 +858,10 @@ document.getElementById('shopBtn').onclick = async () => {
   if (candidateGridApi) { candidateGridApi.setGridOption('rowData', r.allResults || []);
     fitGridHeight(document.getElementById('candidateGrid'), candidateGridApi, (r.allResults || []).length); }
   await refreshLedger();
-  btn.disabled = false; btn.textContent = '🛒 Find products & convene the Tribunal';
-};
+});
 
 // --- Direct flow ---
-document.getElementById('run').onclick = async () => {
-  const btn = document.getElementById('run'); btn.disabled = true; btn.textContent = 'Agents deliberating…';
+bindRun('run', { idle: '⚖️ Convene the Tribunal', busy: 'Agents deliberating…' }, async () => {
   const body = {
     category: document.getElementById('d_category').value,
     amount: Number(document.getElementById('d_amount').value),
@@ -865,8 +902,7 @@ document.getElementById('run').onclick = async () => {
   } else { pw.classList.add('hidden'); }
 
   await refreshLedger();
-  btn.disabled = false; btn.textContent = '⚖️ Convene the Tribunal';
-};
+});
 
 // Init
 initCandidateGrid();
