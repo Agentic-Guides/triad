@@ -145,6 +145,9 @@
   .reco { background:#dcfce7; border:1px solid #166534; border-radius:10px; padding: 12px; margin-bottom: 12px }
   .reco.cond { background:#92400e; border-color:#b45309; }
   .reco .t { font-size:15px; font-weight:700; }
+.reco-img { float:left; width:64px; height:64px; border-radius:10px; margin:0 12px 6px 0;
+            background:#fff; box-shadow:0 1px 4px rgba(60,45,30,.16) }
+.reco::after { content:''; display:block; clear:both }
   .reco .p { color:var(--gold); font-size:20px; font-weight:800; }
 
   
@@ -456,10 +459,10 @@
       <h2>Shop Request</h2>
       <div class="grid2">
         <div class="field"><label>Category</label><input id="category" value="skincare" /></div>
-        <div class="field"><label>Monthly budget (USD)</label><input id="budget" type="number" value="600" /></div>
+        <div class="field"><label>Monthly budget (USD)</label><input id="budget" type="number" value="60" /></div>
       </div>
       <div class="grid2">
-        <div class="field"><label>Already spent this month (USD)</label><input id="spent" type="number" value="420" /></div>
+        <div class="field"><label>Already spent this month (USD)</label><input id="spent" type="number" value="0" /></div>
         <div class="field"><label>Max price (USD)</label><input id="maxPrice" type="number" value="60" /></div>
       </div>
       <button id="shopBtn">🛒 Find products &amp; convene the Tribunal <span class="btn-ico">→</span></button>
@@ -484,8 +487,8 @@
       </div>
       <div class="field"><label>Why?</label><input id="d_reason" value="Tuesday 3 AM renewal failed — card declined — 14 months paid in a row" /></div>
       <div class="grid2">
-        <div class="field"><label>Monthly budget (USD)</label><input id="d_budget" type="number" value="600" /></div>
-        <div class="field"><label>Already spent (USD)</label><input id="d_spent" type="number" value="420" /></div>
+        <div class="field"><label>Monthly budget (USD)</label><input id="d_budget" type="number" value="60" /></div>
+        <div class="field"><label>Already spent (USD)</label><input id="d_spent" type="number" value="0" /></div>
       </div>
       <button id="run">⚖️ Convene the Tribunal</button>
     </div>
@@ -566,6 +569,13 @@ function renderAgent(a) {
 function initCandidateGrid() {
   candidateGridApi = agGrid.createGrid(document.getElementById('candidateGrid'), {
     columnDefs: [
+      // Small thumbnail first, so the candidate grid reads as a catalogue rather
+      // than a table. Kept at 24px against AG Grid's default row height — a
+      // full-size illustration in a ~28px row is what collapsed this grid before.
+      { headerName: '', width: 42, minWidth: 42, maxWidth: 42, sortable: false, filter: false,
+        cellRenderer: p => p.data && p.data.image
+          ? `<img src="${p.data.image}" alt="" style="width:24px;height:24px;border-radius:5px;vertical-align:middle">`
+          : '' },
       { field: 'title', headerName: 'Product', flex: 3, minWidth: 200, tooltipField: 'title' },
       { field: 'brand', headerName: 'Brand', flex: 1, minWidth: 90 },
       { field: 'price', headerName: 'Price', flex: 1, minWidth: 80,
@@ -788,6 +798,7 @@ document.getElementById('shopBtn').onclick = async () => {
   if (r.ok && r.recommendation) {
     const pr = r.recommendation.product;
     reco.innerHTML = `<div class="reco ${r.recommendation.decision==='CONDITIONAL'?'cond':''}">
+    ${r.recommendation.product.image ? `<img class="reco-img" src="${r.recommendation.product.image}" alt="">` : ''}
       <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px">Tribunal Consensus — ${r.recommendation.decision}</div>
       <div class="t">${pr.title} <span style="color:var(--dim);font-weight:400">· ${pr.brand}</span></div>
       <div class="p">$${Number(pr.price).toLocaleString()} <span style="font-size:12px;color:var(--dim)">★${pr.rating}</span></div>

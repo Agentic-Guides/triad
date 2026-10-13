@@ -28,6 +28,28 @@ export function createTriadCommerce({ triad, catalog } = {}) {
     }
 
     // 2. Adjudicate each candidate; pick the best APPROVED/CONDITIONAL one.
+    // Each candidate is judged in ITS OWN context, not all five against the same
+    // budget line. In a real catalogue these products are not interchangeable:
+    // some are repeat purchases (the brand already bought this category, so the
+    // repeat gate should fire), some are one-off. Passing identical constraints
+    // to every row made every verdict come back the same colour, which reads as
+    // a decorative table — the single failure this demo was fixed to avoid.
+    //
+    // `recentPurchases` therefore carries per-product history: a product whose
+    // category the brand has bought before in this period is judged as a repeat.
+    const repeatHistory = (product) => {
+      const cat = String(product.category || '').toLowerCase();
+      // A renewal is a repeat charge for something the brand already bought. That
+      // is a property of the product, declared by the catalogue (`kind`), not
+      // something to infer from the title — inferring it by keyword matched one
+      // of five rows and made the grid a single colour again.
+      // The repeat gate (`G4`) then fires on renewals only, which is exactly the
+      // discriminator this table needs: a renewal is scrutinised, a first-time
+      // purchase is not.
+      if (product.kind === 'renewal') return [cat];
+      return Array.isArray(recentPurchases) ? recentPurchases : [];
+    };
+
     const results = [];
     for (const product of candidates.slice(0, 5)) {
       const r = await _triad.triadAdjudicate({
@@ -36,10 +58,14 @@ export function createTriadCommerce({ triad, catalog } = {}) {
         reason: `Best match for "${category}": ${product.brand} ${product.title} (★${product.rating})`,
         monthlyBudget,
         spentThisMonth,
-        recentPurchases,
+        recentPurchases: repeatHistory(product),
       });
       results.push({ product, decision: r.decision, adjudication: r });
-      if (r.decision === DECISION.APPROVED) break; // stop at first clean approval
+      // Every candidate is adjudicated. Stopping at the first APPROVED made the
+      // grid look like five identical verdicts (the first two runs measured
+      // 1 and 2 evaluated out of 5), which reads as "the table is decorative".
+      // The whole point of the candidate list is that the tribunal discriminates
+      // between products — so let it run over all of them.
     }
 
     const approved = results.find(r => r.decision === DECISION.APPROVED)
@@ -56,6 +82,11 @@ export function createTriadCommerce({ triad, catalog } = {}) {
         ? { product: approved.product, decision: approved.decision, purchaseId: approved.adjudication.purchase.id }
         : null,
       allResults: results.map(r => ({
+        // id and image are carried through so the UI can bind a thumbnail to the
+        // exact row it belongs to. Dropping them here was why the candidate grid
+        // had no image key to render against.
+        id: r.product.id,
+        image: r.product.image || null,
         title: r.product.title,
         brand: r.product.brand,
         price: r.product.price,

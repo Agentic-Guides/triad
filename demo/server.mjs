@@ -7,7 +7,7 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { createTriad } from '../src/webmcp.js';
 import { createTriadCommerce } from '../src/commerce.js';
 
@@ -24,6 +24,28 @@ const server = createServer(async (req, res) => {
     return res.end(html);
   }
 
+  // Static assets (product images). Allowlisted extensions only, and the
+  // resolved path must stay inside demo/ — a plain join() would let
+  // `GET /img/../../paypal/client.js` read anything on disk.
+  if (req.method === 'GET' && url.pathname.startsWith('/img/')) {
+    const rel = decodeURIComponent(url.pathname.slice(1)); // img/xxx.svg
+    const full = resolve(__dir, rel);
+    const allowed = /^[A-Za-z0-9._-]+$/;
+    const name = rel.slice('img/'.length);
+    if (!full.startsWith(resolve(__dir, 'img') + sep) || !/\.(svg|png|jpg|webp)$/i.test(name)
+        || !allowed.test(name)) {
+      res.writeHead(400); return res.end('bad asset path');
+    }
+    try {
+      const buf = await readFile(full);
+      const type = name.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+      res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=3600' });
+      return res.end(buf);
+    } catch {
+      res.writeHead(404); return res.end('not found');
+    }
+  }
+
   if (req.method === 'POST' && url.pathname === '/api/adjudicate') {
     try {
       const body = await readJson(req);
@@ -35,6 +57,13 @@ const server = createServer(async (req, res) => {
       console.error('[api] handler failed:', e && e.message ? e.message : e);
       return json(res, 500, { error: 'internal error' });
     }
+  }
+
+  // Preview page used to render the product image sheet for screenshots.
+  if (req.method === 'GET' && url.pathname === '/shot.html') {
+    const html = await readFile(join(__dir, 'shot.html'), 'utf8');
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    return res.end(html);
   }
 
   if (req.method === 'POST' && url.pathname === '/api/shop') {

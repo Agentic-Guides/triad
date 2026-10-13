@@ -169,7 +169,18 @@ export function deterministicReason(agent, purchase) {
     //      this gate does not mean "don't buy" — it means "you are buying with
     //      no headroom", which is exactly what an auditor should say out loud.
     if (c.monthlyBudget != null) {
-      gates.push({ id: 'G5_survives_double_cost', pass: amount * 2 <= c.monthlyBudget * 0.5 });
+      // Cost stress: if this cost twice as much (fees, tax, shipping, a price
+      // change, a currency swing), would it still fit the money that is left?
+      //
+      // This must be measured against the REMAINING budget, not against a fixed
+      // fraction of the monthly budget. Comparing against half the monthly budget
+      // made every item above 25% of the budget fail, so a perfectly ordinary
+      // $42 renewal on a $60 budget was rejected for "cost stress" when a doubled
+      // $84 would in fact still have fit a $60 budget only if nothing else were
+      // spent — the gate was answering a different question than the one it
+      // claims to answer.
+      const remaining = c.monthlyBudget - (c.spentThisMonth ?? 0);
+      gates.push({ id: 'G5_survives_double_cost', pass: amount * 2 <= remaining });
     }
 
     const failedGates = gates.filter(g => !g.pass).map(g => g.id);
