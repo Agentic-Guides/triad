@@ -190,6 +190,42 @@ structure: with no API key at all (`node test_triad.mjs`) the deterministic
 reasoning layer returns the same verdicts the LLMs do, so the money gate cannot be
 argued around by a model outage or a prompt injection inside a product listing.
 
+
+## The auditor rejects with named gates, not opinions
+
+A high score is not evidence of an edge. We tested that claim rather than repeating it:
+10,000 randomly-trading bots on a pure-noise market (drift 0, one-day execution lag,
+10,000 bots x 500 days) produced a **best in-sample Sharpe of 2.93**. Adding a 0.05%
+per-side fee dropped the best to **1.20**; at 0.10% it fell to **0.14**. With no fees at
+all, **7.5% of the bots** looked like they had a Sharpe above 1 — roughly one in thirteen.
+
+So the Auditor does not say "this looks risky." It runs named gates and reports which
+ones failed:
+
+| Gate | Meaning |
+| --- | --- |
+| `G1_amount_positive` | an unquantified purchase cannot be audited |
+| `G2_within_remaining` | the money has to be there |
+| `G3_share_under_half` | one purchase must not eat >50% of the monthly budget |
+| `G4_not_repeat_category` | no recent purchase of the same category |
+| `G5_survives_double_cost` | if the price doubled it would breach the concentration limit |
+
+`failedGates` is returned on the Auditor's argument, so the dissent map can show a human
+exactly what to fix. A verdict that cannot name its failing gate is an opinion, not an audit.
+Failing a gate is not the same as "do not buy" — `G5` means you are buying with no headroom,
+and the engine says so out loud instead of silently approving.
+
+Measured decision matrix (budget $200, spent $0):
+
+| Purchase | Decision | Failed gates |
+| --- | --- | --- |
+| $42 | **APPROVED** | none |
+| $120 (60% share) | CONDITIONAL | G3, G5 |
+| $90 (double cost breaches limit) | CONDITIONAL | G5 |
+| $42, same category as a recent purchase | CONDITIONAL | G4 |
+| $0 | CONDITIONAL | G1 |
+| $250 (over budget) | **DENIED** | G2, G3, G5 |
+
 ## PayPal Developer Platform usage (depth)
 
 This is not a checkout button. PayPal is the settlement layer the whole model depends on, and it

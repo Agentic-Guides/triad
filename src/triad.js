@@ -84,6 +84,10 @@ function mkArgument(agent, verdict, reasons, options = {}) {
     conditions: options.conditions ?? null, // WITNESSの条件付き承認
     confidence: options.confidence ?? 0.5,
     model: agent.model,
+    // ★ 監査ゲート（実測できる形で残す）。
+    //   失敗したゲートの【名前】が無い verdict は「意見」であって監査ではない。
+    gates: options.gates ?? null,
+    failedGates: options.failedGates ?? null,
   };
 }
 
@@ -133,6 +137,49 @@ export function deterministicReason(agent, purchase) {
       }
     }
 
+    // ★ Multi-gate audit — adapted from the quant research rejection engine.
+    //   Idea: it is not enough that the money exists. A single purchase should
+    //   have to clear several independent gates, and the audit must say WHICH
+    //   gate it failed. A verdict that cannot name its failing gate is not an
+    //   audit, it is an opinion.
+    //
+    //   Gates (all must pass; each one is named in the reasons):
+    //     G1 amount > 0            — an unquantified purchase cannot be audited
+    //     G2 within remaining      — the money has to be there
+    //     G3 share <= 50%          — concentration risk, not just availability
+    //     G4 not a repeat          — no recent purchase of the same category
+    //     G5 cost stress           — the decision must survive a doubled price
+    const gates = [];
+    gates.push({ id: 'G1_amount_positive', pass: amount > 0 });
+
+    if (c.monthlyBudget != null) {
+      const remaining = c.monthlyBudget - (c.spentThisMonth ?? 0);
+      gates.push({ id: 'G2_within_remaining', pass: amount <= remaining });
+      gates.push({ id: 'G3_share_under_half', pass: amount / c.monthlyBudget <= 0.5 });
+    }
+
+    const recentCats = (c.recentPurchases || []).map(String).map(x => x.toLowerCase());
+    const repeat = recentCats.includes(String(category || '').toLowerCase());
+    gates.push({ id: 'G4_not_repeat_category', pass: !repeat });
+
+    // G5 — cost stress: the quant analogue of re-running a backtest at double
+    //      fees. A purchase that only fits because of its current price has no
+    //      margin for error: if it costs twice as much (fees, tax, shipping,
+    //      a price change) it would breach the concentration limit. Failing
+    //      this gate does not mean "don't buy" — it means "you are buying with
+    //      no headroom", which is exactly what an auditor should say out loud.
+    if (c.monthlyBudget != null) {
+      gates.push({ id: 'G5_survives_double_cost', pass: amount * 2 <= c.monthlyBudget * 0.5 });
+    }
+
+    const failedGates = gates.filter(g => !g.pass).map(g => g.id);
+    if (failedGates.length) {
+      reasons.push(`Failed audit gates: ${failedGates.join(', ')}.`);
+      // ★ Gates decide the verdict: any failed gate is an objection, and the
+      //   objection has to name itself so a human can see what to fix.
+      verdict = 'against';
+    }
+
     // ★ Budget-share test — independent of any assumption about recent activity.
     //   A purchase that eats most of the month's budget deserves scrutiny even
     //   when the money happens to be available. Without this, a purchase using
@@ -156,7 +203,11 @@ export function deterministicReason(agent, purchase) {
         reasons.push('This is a large fraction of the monthly budget despite a recent purchase.');
       }
     }
-    return mkArgument(agent, verdict, reasons, { confidence: 0.68 });
+    return mkArgument(agent, verdict, reasons, {
+      confidence: 0.68,
+      gates,               // ★各ゲートの合否（却下理由の名前が残る）
+      failedGates,
+    });
   }
 
   // WITNESS
