@@ -40,7 +40,10 @@ import { buildReceipt, receiptCustomId, verifyReceipt, hashFromCustomId } from '
  */
 function seedLedger(ledger) {
   const HOUR = 3600e3;
-  const base = Date.now() - 19 * HOUR;
+  // The timeline shows a rolling ±6h window around now, so the seeded week has to
+  // fall inside it or the chart renders empty — a busy ledger behind a blank
+  // timeline reads as a broken panel. Keep the rows recent and the story intact.
+  const base = Date.now() - 20 * 60e3;
   // The ledger runs forward in time, so each row is judged against the money
   // already spent BY THAT POINT, not against the final total. Getting this wrong
   // is what made every row come back CONDITIONAL: the seeded month was judged as
@@ -53,16 +56,16 @@ function seedLedger(ledger) {
   // cheap replacements are approved, the $42 renewal is not, the $89 drive is
   // refused outright, and the last two land as CONDITIONAL as the budget tightens.
   const week = [
-    // amount, category,                     hoursAgo   (spend accumulates as we go)
-    [18,  'USB-C cable 2m',                  19],   // APPROVED    — ordinary restock
-    [9,   'Vitamin D3 90ct',                 15],   // APPROVED    — consumable
-    [42,  'Monthly skincare refill',         13],   // CONDITIONAL — the 3 AM renewal
-    [24,  'HDMI 2.1 cable 3m',               10],   // CONDITIONAL — budget tightening
-    [89,  'Portable SSD 1TB',                 6],   // DENIED      — refused outright
-    [12,  'USB-C to Lightning adapter',       2],   // APPROVED    — small, still fits
+    // amount, category,                     minutesAgo  (spend accumulates as we go)
+    [18,  'USB-C cable 2m',                 330],   // APPROVED    — ordinary restock
+    [9,   'Vitamin D3 90ct',                268],   // APPROVED    — consumable
+    [42,  'Monthly skincare refill',        236],   // CONDITIONAL — the renewal that failed
+    [24,  'HDMI 2.1 cable 3m',              190],   // CONDITIONAL — budget tightening
+    [89,  'Portable SSD 1TB',               120],   // DENIED      — refused outright
+    [12,  'USB-C to Lightning adapter',      24],   // APPROVED    — small, still fits
   ];
-  for (const [amount, category, hoursAgo] of week) {
-    const purchase = { id: 'seed-' + hoursAgo, amount, category, reason: 'seeded history' };
+  for (const [amount, category, minutesAgo] of week) {
+    const purchase = { id: 'seed-' + minutesAgo, amount, category, reason: 'seeded history' };
     const constraints = { monthlyBudget: 60, spentThisMonth: spentRunning, recentPurchases: [] };
     // Order matters: the Witness reads the other two verdicts, so build the
     // Advocate and the Auditor first and hand their actual arguments over. With
@@ -78,7 +81,7 @@ function seedLedger(ledger) {
     };
     const result = adjudicate(purchase, args, 2);
     const receipt = buildReceipt(result, { engine: 'deterministic' });
-    receipt.at = new Date(base - hoursAgo * HOUR).toISOString();
+    receipt.at = new Date(base - minutesAgo * 60e3).toISOString();
     receipt.customId = receiptCustomId(receipt);
     ledger.push({
       at: receipt.at,
