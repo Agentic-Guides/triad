@@ -117,7 +117,7 @@ We would rather a judge trust us than be surprised.
 | 4 | `04_debate.png` | A $42 renewal comes back CONDITIONAL: one for, one against, one judging. The agents only ever propose. |
 | 5 | `05_timeline.png` | One bar per agent vote on the Bryntum timeline — green approved, red blocked, blue neutral. Open disputes stay flagged. |
 | 6 | `06_ledger.png` | Every decision, every vote, every receipt in one AG Grid dashboard. Each row carries the hash stamped into the PayPal order's `custom_id`. |
-| 7 | `07_proof.png` | The money gate is a testable claim, so the demo runs the test. This button executes `tests/moneyGate.test.js` on the machine and prints the raw output: 31 passed, 0 failed. |
+| 7 | `07_proof.png` | Three claims, three tests, all runnable in the page: the money-gate suite (31 passed, 0 failed), the 4x4 verdict grid computed live, and a receipt re-hashed against the hash stored in the PayPal order's `custom_id`. |
 | 8 | `08_grid.png` | The 4×4 verdict grid from the README, reproduced live: sixteen real adjudications, computed when the button is pressed. Charge down the side, budget across the top. |
 
 ## Try it out

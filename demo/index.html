@@ -147,7 +147,25 @@
   .reco .t { font-size:15px; font-weight:700; }
 .proof-lede { font-size: 13.5px; color: var(--dim); line-height: 1.65; margin: 0 0 16px; max-width: 70ch }
 .proof-lede code { font-size: 12.5px; background: var(--sunken); padding: 1px 5px; border-radius: 5px }
-.btn-secondary { background: var(--panel); color: var(--txt); border: 1px solid var(--line); margin-left: 10px }
+.proof-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 22px }
+.proof-steps > li { border-left: 3px solid var(--line); padding-left: 16px }
+.step-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; margin-bottom: 10px }
+.step-n { display: inline-flex; align-items: center; justify-content: center;
+          width: 22px; height: 22px; min-width: 22px; border-radius: 999px;
+          background: var(--gold); color: #fff; font-size: 12px; font-weight: 700 }
+.step-head b { font-size: 14.5px }
+.step-sub { font-size: 12.5px; color: var(--dim); line-height: 1.55; display: block; width: 100%; margin-top: 2px }
+.step-sub code { font-size: 11.5px; background: var(--sunken); padding: 1px 5px; border-radius: 5px }
+#ledgerVerifyOut { margin-top: 14px }
+.vcard { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; font-size: 12.5px }
+.vcard table { border-collapse: collapse; width: 100% }
+.vcard th, .vcard td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line) }
+.vcard th { background: var(--sunken); color: var(--dim); font-size: 11px;
+            text-transform: uppercase; letter-spacing: .04em; font-weight: 700; width: 42% }
+.vcard tr:last-child th, .vcard tr:last-child td { border-bottom: none }
+.vcard .ok { color: #1c7a4a; font-weight: 600 }
+.vcard .bad { color: var(--gold); font-weight: 600 }
+.btn-secondary { background: var(--panel); color: var(--txt); border: 1px solid var(--line) }
 .btn-secondary:hover:not(:disabled) { background: var(--sunken) }
 #gridTable { overflow-x: auto; margin: 18px 0 0 }
 #gridTable table { border-collapse: collapse; font-size: 12.5px; width: 100% }
@@ -484,29 +502,57 @@
   <div class="panel" id="proofPanel">
     <h2>Prove it yourself — don't take our word for it</h2>
     <p class="proof-lede">
-      The headline claim is that no money moves unless the agents agree. That is a testable
-      statement, so here is the test. This button runs <code>tests/moneyGate.test.js</code> on
-      this machine, right now, and prints everything it says — pass or fail.
+      Every claim this project makes is a testable statement, so here are the tests. Three of them,
+      in the order they matter. Each one runs on this machine, right now, and shows you what it
+      actually said.
     </p>
-    <button id="proofBtn">▶ Run the money-gate test suite</button>
-    <button id="gridBtn" class="btn-secondary">⊞ Show me all 16 cells</button>
-    <div id="gridOut" class="hidden">
-      <div id="gridTable"></div>
-      <p class="proof-note">
-        Sixteen real adjudications, computed just now — not the table copied out of the README.
-        Charge down the side, monthly budget across the top. Spend part of the month first and every
-        cell moves one step stricter.
-      </p>
-    </div>
-    <div id="proofOut" class="hidden">
-      <div id="proofVerdict" class="proof-verdict"></div>
-      <pre id="proofLog"></pre>
-      <p class="proof-note">
-        <b>What to look for:</b> <code>denied → createOrder NOT called — calls=1</code>.
-        That means a DENIED verdict never reached PayPal at all — the gate returns
-        <code>not_approved</code> before any network call is made.
-      </p>
-    </div>
+
+    <ol class="proof-steps">
+      <li>
+        <div class="step-head">
+          <span class="step-n">1</span>
+          <b>No money moves unless the agents agree.</b>
+          <span class="step-sub">A DENIED verdict never reaches PayPal — the gate returns
+          <code>not_approved</code> before any network call.</span>
+        </div>
+        <button id="proofBtn">▶ Run the money-gate test suite</button>
+        <div id="proofOut" class="hidden">
+          <div id="proofVerdict" class="proof-verdict"></div>
+          <pre id="proofLog"></pre>
+          <p class="proof-note">
+            <b>What to look for:</b> <code>denied → createOrder NOT called — calls=1</code>.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-head">
+          <span class="step-n">2</span>
+          <b>The verdict table is measured, not estimated.</b>
+          <span class="step-sub">Sixteen real adjudications, computed when you press the button —
+          not the table copied out of the README.</span>
+        </div>
+        <button id="gridBtn" class="btn-secondary">⊞ Show me all 16 cells</button>
+        <div id="gridOut" class="hidden">
+          <div id="gridTable"></div>
+          <p class="proof-note">
+            Charge down the side, monthly budget across the top. Spend part of the month first and
+            every cell moves one step stricter.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-head">
+          <span class="step-n">3</span>
+          <b>The decision is written into the payment record.</b>
+          <span class="step-sub">Re-hash a receipt and compare it with the hash stored in the PayPal
+          order's <code>custom_id</code>. If they disagree, the record was altered.</span>
+        </div>
+        <button id="ledgerVerifyBtn" class="btn-secondary">🔐 Verify a receipt against PayPal</button>
+        <div id="ledgerVerifyOut" class="hidden"></div>
+      </li>
+    </ol>
   </div>
 
   <!-- SHOP MODE -->
@@ -971,6 +1017,47 @@ bindRun('shopBtn', { idle: '🛒 Find products & convene the Tribunal', busy: 'C
   if (candidateGridApi) { candidateGridApi.setGridOption('rowData', r.allResults || []);
     fitGridHeight(document.getElementById('candidateGrid'), candidateGridApi, (r.allResults || []).length); }
   await refreshLedger();
+});
+
+// --- Verify a receipt against the PayPal record, without hunting for the row ---
+// Picks the most recent APPROVED entry, because that is the one a payment actually
+// settled; falls back to the newest entry of any kind so the button always does
+// something visible. The result is shown as a field-by-field comparison rather than a
+// bare "verified", so a reader can see exactly which two values were compared.
+bindRun('ledgerVerifyBtn', { idle: '🔐 Verify a receipt against PayPal', busy: 'Re-hashing…' }, async () => {
+  const led = await api('/api/ledger');
+  const entries = (led && led.entries) || [];
+  const out = document.getElementById('ledgerVerifyOut');
+  out.classList.remove('hidden');
+  if (!entries.length) {
+    out.innerHTML = '<p class="proof-note">The ledger is empty — run a case first.</p>';
+    return;
+  }
+  const entry = [...entries].reverse().find((e) => e.decision === 'APPROVED') || entries[entries.length - 1];
+  const r = await api('/api/verify-ledger', {
+    purchaseId: (entry.purchase || {}).id,
+    customId: entry.customId,
+  });
+  if (!r || r.error) {
+    out.innerHTML = `<p class="proof-note">Could not verify: ${(r && r.error) || 'unknown error'}</p>`;
+    return;
+  }
+  const row = (label, value, cls) =>
+    `<tr><th>${label}</th><td class="${cls || ''}">${value}</td></tr>`;
+  out.innerHTML = `
+    <div class="vcard">
+      <table>
+        ${row('Verdict', `${entry.decision} — ${entry.category || ''} $${Number(entry.amount || 0).toLocaleString()}`)}
+        ${row('Decided at', new Date(entry.at).toLocaleString())}
+        ${row('Hash re-computed from the receipt', r.orderHash)}
+        ${row('Hash stored in the PayPal custom_id', r.ledgerHash)}
+        ${row('Do they match?', r.hashMatches
+            ? '✓ yes — the receipt has not been altered'
+            : '✗ no — the record was changed after it was written',
+            r.hashMatches ? 'ok' : 'bad')}
+        ${row('PayPal custom_id', r.customId)}
+      </table>
+    </div>`;
 });
 
 // --- Direct flow ---
