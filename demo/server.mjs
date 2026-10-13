@@ -119,6 +119,18 @@ async function readJson(req) {
 }
 
 const PORT = process.env.PORT || 8787;
+// If this fails with EADDRINUSE, an older instance still owns the port and the
+// new process exits — while curl still gets answers from the old one, which
+// makes any verification you run silently meaningless. Check the owner first:
+//   netstat -ano | grep ":<port>.*LISTENING"
+server.on('error', (e) => {
+  if (e && e.code === 'EADDRINUSE') {
+    console.error(`[demo] port ${PORT} is already in use — another instance is ` +
+      `answering requests. Stop it before starting a new one, or set PORT.`);
+    process.exit(1);
+  }
+  throw e;
+});
 server.listen(PORT, () => {
   console.log(`\n⚖️  Tuesday demo running → http://localhost:${PORT}`);
   console.log(`   PayPal: ${triad._paypal.mode}  |  LLM: ${triad._runner.live ? 'live' : 'deterministic'}  |  Catalog: ${commerce._catalog.mode}\n`);
