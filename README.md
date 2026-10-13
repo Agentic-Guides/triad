@@ -12,6 +12,28 @@ A working prototype for the [PayPal AI Hackathon](https://paypalaihackathon.devp
 
 ![Tuesday — main screen](docs/screenshots/01_main.png)
 
+### Prove it yourself, in the browser
+
+The headline claim is that **no money moves unless the agents agree**. That is a testable
+statement, so the demo does not ask you to believe it — it runs the test.
+
+![Run the money-gate test suite, in the page](docs/screenshots/07_proof.png)
+
+Press **Run the money-gate test suite** and `tests/moneyGate.test.js` executes on the machine,
+with its raw output printed into the page. No summarising, no prettifying: a failing assertion
+would be visible exactly as it would in a terminal.
+
+The current run: **31 passed, 0 failed.** The two lines worth finding are
+
+```
+PASS  DENIED: createOrder calls — called 0×, expected 0
+PASS  denied → createOrder NOT called — calls=1
+```
+
+A DENIED verdict never reaches PayPal at all. `triadCreateOrder()` returns `not_approved`
+before any network call is made, and the suite asserts that the create-order function is
+invoked zero times.
+
 ### The 5-minute walkthrough
 
 [Demonstration video](devpost-media/tuesday_submission_v8_1080p_hq.mp4) — 5:00, 1080p, no narration.

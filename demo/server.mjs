@@ -61,6 +61,30 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  // Runs the money-gate test suite on demand and returns its real output, so a judge
+  // can watch the claim get proven without leaving the browser. The test file is
+  // spawned as a child process; its stdout is returned verbatim. Nothing here is
+  // summarised or prettified — if the suite fails, the failure text is what you see.
+  if (req.method === 'GET' && url.pathname === '/api/proof') {
+    const { spawn } = await import('node:child_process');
+    const root = resolve(__dir, '..');
+    const file = join(root, 'tests', 'moneyGate.test.js');
+    return await new Promise((resolve) => {
+      const child = spawn(process.execPath, [file], { cwd: root });
+      let out = '';
+      const cap = (b) => { if (out.length < 60000) out += b.toString(); };
+      child.stdout.on('data', cap);
+      child.stderr.on('data', cap);
+      child.on('error', (e) => json(res, 500, { ok: false, error: String(e && e.message) }));
+      child.on('close', (code) => {
+        const passed = (out.match(/PASS /g) || []).length;
+        const failed = (out.match(/FAIL /g) || []).length;
+        json(res, 200, { ok: code === 0, exitCode: code, passed, failed, output: out });
+        resolve();
+      });
+    });
+  }
+
   // Preview page used to render the product image sheet for screenshots.
   if (req.method === 'GET' && url.pathname === '/shot.html') {
     const html = await readFile(join(__dir, 'shot.html'), 'utf8');
