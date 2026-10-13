@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve, sep } from 'node:path';
 import { createTriad } from '../src/webmcp.js';
 import { createTriadCommerce } from '../src/commerce.js';
+import { hashFromCustomId } from '../src/receipt.js';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const triad = createTriad();
@@ -115,6 +116,46 @@ const server = createServer(async (req, res) => {
       rows.push({ amount, verdicts: row });
     }
     return json(res, 200, { ok: true, amounts, budgets, spentThisMonth: 0, rows });
+  }
+
+  // Verifies a ledger entry against its PayPal order stamp, for any entry the reader
+  // picks rather than only the one still held in memory. The check itself is the same
+  // one triadVerifyReceipt performs: re-hash the receipt, pull the hash out of the
+  // order's custom_id, and see whether they agree. Reading the two values off the
+  // ledger entry rather than a live pending order is what lets a judge verify a
+  // decision made an hour ago.
+  if (req.method === 'POST' && url.pathname === '/api/verify-ledger') {
+    try {
+      const body = await readJson(req);
+      const entries = triad.triadGetLedger().entries || [];
+      let entry = null;
+      if (body && body.purchaseId) {
+        entry = entries.find((e) => (e.purchase && e.purchase.id) === body.purchaseId) || null;
+      }
+      if (!entry && body && body.customId) {
+        entry = entries.find((e) => e.customId === body.customId) || null;
+      }
+      if (!entry) return json(res, 404, { ok: false, error: 'ledger_entry_not_found' });
+
+      const customId = entry.customId || (entry.order?.purchase_units?.[0]?.custom_id);
+      const onChain = hashFromCustomId(customId);
+      return json(res, 200, {
+        ok: Boolean(customId) && onChain === entry.receiptHash,
+        decision: entry.decision,
+        category: entry.category,
+        amount: entry.amount,
+        customId,
+        orderHash: onChain,
+        ledgerHash: entry.receiptHash,
+        hashMatches: onChain === entry.receiptHash,
+        receiptIntact: entry.receiptIntact !== false,
+        at: entry.at,
+      });
+    } catch (e) {
+      if (e instanceof BadRequest) return json(res, 400, { error: e.message });
+      console.error('[api] handler failed:', e && e.message ? e.message : e);
+      return json(res, 500, { error: 'internal error' });
+    }
   }
 
   // Preview page used to render the product image sheet for screenshots.

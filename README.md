@@ -14,25 +14,29 @@ A working prototype for the [PayPal AI Hackathon](https://paypalaihackathon.devp
 
 ### Prove it yourself, in the browser
 
-The headline claim is that **no money moves unless the agents agree**. That is a testable
-statement, so the demo does not ask you to believe it — it runs the test.
+Every claim this project makes is a testable statement, so the demo does not ask you to believe
+any of them. Three buttons, in the order they matter.
 
-![Run the money-gate test suite, in the page](docs/screenshots/07_proof.png)
+![Three claims, three tests, all runnable in the page](docs/screenshots/07_proof.png)
 
-Press **Run the money-gate test suite** and `tests/moneyGate.test.js` executes on the machine,
-with its raw output printed into the page. No summarising, no prettifying: a failing assertion
-would be visible exactly as it would in a terminal.
-
-The current run: **31 passed, 0 failed.** The two lines worth finding are
+**1. Run the money-gate test suite.** `tests/moneyGate.test.js` executes on the machine and prints
+its raw output into the page. No summarising, no prettifying: a failing assertion would be visible
+exactly as it would in a terminal. The two lines worth finding are
 
 ```
 PASS  DENIED: createOrder calls — called 0×, expected 0
 PASS  denied → createOrder NOT called — calls=1
 ```
 
-A DENIED verdict never reaches PayPal at all. `triadCreateOrder()` returns `not_approved`
-before any network call is made, and the suite asserts that the create-order function is
-invoked zero times.
+A DENIED verdict never reaches PayPal at all. `triadCreateOrder()` returns `not_approved` before any
+network call is made, and the suite asserts that the create-order function is invoked zero times.
+
+**2. Show me all 16 cells.** The verdict table below, recomputed in front of you: sixteen real
+adjudications, not the table copied out of this file.
+
+**3. Verify a receipt against PayPal.** Re-hashes a receipt and compares it with the hash stored in
+the PayPal order's `custom_id`. If the two disagree, the record was altered after it was written.
+The card shows both hashes so you can see exactly what was compared.
 
 ### The 5-minute walkthrough
 
