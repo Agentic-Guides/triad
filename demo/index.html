@@ -145,6 +145,19 @@
   .reco { background:#dcfce7; border:1px solid #166534; border-radius:10px; padding: 12px; margin-bottom: 12px }
   .reco.cond { background:#92400e; border-color:#b45309; }
   .reco .t { font-size:15px; font-weight:700; }
+.proof-lede { font-size: 13.5px; color: var(--dim); line-height: 1.65; margin: 0 0 16px; max-width: 70ch }
+.proof-lede code { font-size: 12.5px; background: var(--sunken); padding: 1px 5px; border-radius: 5px }
+.proof-verdict { font-size: 15px; font-weight: 700; letter-spacing: .01em; margin: 4px 0 14px }
+.proof-verdict.pass { color: #1c7a4a }
+.proof-verdict.fail { color: var(--gold) }
+.proof-note { font-size: 12.5px; color: var(--dim); line-height: 1.6; margin: 14px 0 0 }
+.proof-note code { font-size: 11.5px; background: var(--sunken); padding: 1px 5px; border-radius: 5px }
+#proofLog {
+  background: var(--sunken); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px 16px; margin: 0; max-height: 300px; overflow: auto;
+  font: 11.5px/1.55 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color: var(--txt); white-space: pre; tab-size: 2;
+}
 .reco-img { float:left; width:112px; height:112px; object-fit:cover; border-radius:14px; margin:0 16px 8px 0;
             background:#fff; box-shadow:0 1px 4px rgba(60,45,30,.16) }
 .reco::after { content:''; display:block; clear:both }
@@ -450,6 +463,29 @@
     <div class="tab" id="tabShop">🛒 Shop (Channel3 → Tribunal)</div>
     <div class="tab active" id="tabDirect">⚖️ Direct Adjudication</div>
     <div class="tab" id="tabTimeline">📅 Audit Timeline (Bryntum)</div>
+  </div>
+
+  <!-- The claim this project makes is "nothing is paid unless the agents agree".
+       Rather than asking a reader to take that on faith, this panel runs the actual
+       test suite in the browser and prints its output verbatim. The output is not
+       paraphrased anywhere: if the suite ever fails, the failure is what you read. -->
+  <div class="panel" id="proofPanel">
+    <h2>Prove it yourself — don't take our word for it</h2>
+    <p class="proof-lede">
+      The headline claim is that no money moves unless the agents agree. That is a testable
+      statement, so here is the test. This button runs <code>tests/moneyGate.test.js</code> on
+      this machine, right now, and prints everything it says — pass or fail.
+    </p>
+    <button id="proofBtn">▶ Run the money-gate test suite</button>
+    <div id="proofOut" class="hidden">
+      <div id="proofVerdict" class="proof-verdict"></div>
+      <pre id="proofLog"></pre>
+      <p class="proof-note">
+        <b>What to look for:</b> <code>denied → createOrder NOT called — calls=1</code>.
+        That means a DENIED verdict never reached PayPal at all — the gate returns
+        <code>not_approved</code> before any network call is made.
+      </p>
+    </div>
   </div>
 
   <!-- SHOP MODE -->
@@ -842,6 +878,25 @@ function showTab(which) {
 document.getElementById('tabShop').onclick = () => showTab('shop');
 document.getElementById('tabDirect').onclick = () => showTab('direct');
 document.getElementById('tabTimeline').onclick = () => showTab('timeline');
+
+// --- Run the money-gate suite, in the page, and show its raw output ---
+bindRun('proofBtn', { idle: '▶ Run the money-gate test suite', busy: 'Running tests/moneyGate.test.js…' }, async () => {
+  const r = await api('/api/proof');
+  const out = document.getElementById('proofOut');
+  const verdict = document.getElementById('proofVerdict');
+  const log = document.getElementById('proofLog');
+  out.classList.remove('hidden');
+  // Show the suite's own words. No summarising: a judge should be able to spot a
+  // failing assertion here as easily as in a terminal.
+  log.textContent = (r.output || r.error || '(no output)').trim();
+  if (r.ok) {
+    verdict.className = 'proof-verdict pass';
+    verdict.textContent = `✓ ${r.passed} passed, ${r.failed} failed — exit code ${r.exitCode}`;
+  } else {
+    verdict.className = 'proof-verdict fail';
+    verdict.textContent = `✗ ${r.passed || 0} passed, ${r.failed || 0} failed — exit code ${r.exitCode ?? 'n/a'}`;
+  }
+});
 
 // --- Shop flow ---
 bindRun('shopBtn', { idle: '🛒 Find products & convene the Tribunal', busy: 'Channel3 searching → Tribunal deliberating…' }, async () => {
