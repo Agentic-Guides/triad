@@ -57,6 +57,52 @@ seeing why, and should always be able to say *no*.
 > **The story, in one line:** *A failed $42 renewal on Tuesday becomes a reviewed, provable,
 > human-approved payment — without the customer ever being lost to a silent decline.*
 
+## How a brand actually uses this, start to finish
+
+Five steps. The first four take about a minute; the fifth is the one that matters.
+
+**1. The renewal fails (3 AM, unattended).** A card is declined on a $42 monthly renewal. In the
+demo, press **Find products & convene the Tribunal** — the shop tab is already open.
+
+**2. The three agents argue the specific case.** Advocate, Auditor and Witness each get the same
+facts: amount, category, how much of this month's budget is already spent, and whether the customer
+is on a first purchase or a renewal. They return a verdict — **APPROVED**, **CONDITIONAL**, or
+**DENIED** — and a reason per agent.
+
+Open **Direct Adjudication** to run a case of your own. Change the amount or the budget, press
+**Convene the Tribunal**, and watch the verdict move. Every cell below is measured from the running
+demo, not estimated:
+
+| Amount | Budget $30 | Budget $60 | Budget $150 | Budget $400 |
+|---|---|---|---|---|
+| **$9** | CONDITIONAL | APPROVED | APPROVED | APPROVED |
+| **$18** | CONDITIONAL | CONDITIONAL | APPROVED | APPROVED |
+| **$42** | DENIED | CONDITIONAL | CONDITIONAL | APPROVED |
+| **$90** | DENIED | DENIED | CONDITIONAL | APPROVED |
+
+**Both axes move the verdict in the direction you would expect.** A bigger purchase is judged more
+strictly; a bigger budget buys more room; and the $42 renewal that starts the story sits exactly on
+the line between *retry it* and *ask a human* — which is why the demo opens there. The gates behind
+each verdict are named in the receipt: **G2** (absolute ceiling), **G3** (share of the month's
+budget), **G4** (repeat-customer bar), **G5** (survives double cost).
+
+**3. Disagreement is kept on purpose.** When the agents split, the result is CONDITIONAL and the
+receipt carries the **dissent map** — who was for, who was against, and which gate each one cited.
+Nothing is smoothed over. Open **Audit Timeline** to see the votes laid out on a time axis.
+
+**4. Nothing moves without a human.** The three agents can only *propose*. Even on APPROVED, the
+payment stays a draft with an approval link until a person opens it and confirms. On DENIED, the
+order endpoint refuses with `not_approved` and the money never moves.
+
+**5. Every decision lands in the ledger, hashed.** The **Governance Dashboard** keeps every
+adjudication with its votes, its dissent map and a `triad1:` receipt hash. The same hash is written
+into the PayPal payment's `custom_id`, so the receipt and the payment are the same object. Anyone
+can re-verify a past decision without trusting the agents that made it.
+
+> **The one screen that proves it:** the candidate table. Five products, three different verdicts,
+> each with the gate that decided it. A tribunal that always says yes is a rubber stamp — this one
+> refuses $89 of a $60 budget and says which rule refused it.
+
 ## The specific problem
 
 PayPal's own business runs on **branded checkout and recurring billing**, and both are under
