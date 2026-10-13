@@ -25,31 +25,46 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && url.pathname === '/api/adjudicate') {
-    const body = await readJson(req);
     try {
+      const body = await readJson(req);
       const result = await triad.triadAdjudicate(body);
       return json(res, 200, result);
     } catch (e) {
-      return json(res, 500, { error: String(e) });
+      if (e instanceof BadRequest) return json(res, 400, { error: e.message });
+      // Do not echo internals to the client; log locally instead.
+      console.error('[api] handler failed:', e && e.message ? e.message : e);
+      return json(res, 500, { error: 'internal error' });
     }
   }
 
   if (req.method === 'POST' && url.pathname === '/api/shop') {
-    const body = await readJson(req);
-    try { return json(res, 200, await commerce.triadShop(body)); }
-    catch (e) { return json(res, 500, { error: String(e) }); }
+    try {
+      const body = await readJson(req); return json(res, 200, await commerce.triadShop(body)); }
+    catch (e) {
+      if (e instanceof BadRequest) return json(res, 400, { error: e.message });
+      console.error('[api] handler failed:', e && e.message ? e.message : e);
+      return json(res, 500, { error: 'internal error' });
+    }
   }
 
   if (req.method === 'POST' && url.pathname === '/api/order') {
-    const body = await readJson(req);
-    try { return json(res, 200, await triad.triadCreateOrder(body)); }
-    catch (e) { return json(res, 500, { error: String(e) }); }
+    try {
+      const body = await readJson(req); return json(res, 200, await triad.triadCreateOrder(body)); }
+    catch (e) {
+      if (e instanceof BadRequest) return json(res, 400, { error: e.message });
+      console.error('[api] handler failed:', e && e.message ? e.message : e);
+      return json(res, 500, { error: 'internal error' });
+    }
   }
 
   if (req.method === 'POST' && url.pathname === '/api/capture') {
-    const body = await readJson(req);
-    try { return json(res, 200, await triad.triadCaptureOrder(body)); }
-    catch (e) { return json(res, 500, { error: String(e) }); }
+    try {
+      const body = await readJson(req); return json(res, 200, await triad.triadCaptureOrder(body)); }
+    catch (e) {
+      if (e instanceof BadRequest) return json(res, 400, { error: e.message });
+      console.error('[api] handler failed:', e && e.message ? e.message : e);
+      return json(res, 500, { error: 'internal error' });
+    }
   }
 
   if (req.method === 'GET' && url.pathname === '/api/ledger') {
@@ -57,9 +72,13 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && url.pathname === '/api/verify') {
-    const body = await readJson(req);
-    try { return json(res, 200, await triad.triadVerifyReceipt(body)); }
-    catch (e) { return json(res, 500, { error: String(e) }); }
+    try {
+      const body = await readJson(req); return json(res, 200, await triad.triadVerifyReceipt(body)); }
+    catch (e) {
+      if (e instanceof BadRequest) return json(res, 400, { error: e.message });
+      console.error('[api] handler failed:', e && e.message ? e.message : e);
+      return json(res, 500, { error: 'internal error' });
+    }
   }
 
   res.writeHead(404); res.end('Not found');
@@ -70,10 +89,33 @@ function json(res, code, obj) {
   res.end(JSON.stringify(obj));
 }
 
+/** Max accepted request body. A demo API takes a small decision request; anything
+ *  larger is either a mistake or a denial-of-service attempt. Without a cap,
+ *  readJson() buffers until the process runs out of memory. */
+const MAX_BODY_BYTES = 64 * 1024; // 64 KB
+
+class BadRequest extends Error {}
+
 async function readJson(req) {
   const chunks = [];
-  for await (const c of req) chunks.push(c);
-  return chunks.length ? JSON.parse(Buffer.concat(chunks).toString()) : {};
+  let total = 0;
+  for await (const c of req) {
+    total += c.length;
+    if (total > MAX_BODY_BYTES) {
+      // Stop reading and let the handler answer 413. Destroying the socket here
+      // would surface as a reset instead of an honest error.
+      throw new BadRequest(`request body exceeds ${MAX_BODY_BYTES} bytes`);
+    }
+    chunks.push(c);
+  }
+  if (!chunks.length) return {};
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString());
+  } catch (e) {
+    // A malformed body is the client's problem — answer 400, never throw out of
+    // the request handler (an unhandled rejection ends the process on Node 15+).
+    throw new BadRequest('malformed JSON body');
+  }
 }
 
 const PORT = process.env.PORT || 8787;
