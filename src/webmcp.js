@@ -17,7 +17,8 @@
  */
 
 import { TriadRunner } from './runner.js';
-import { adjudicate, DECISION, buildDissentMap } from './triad.js';
+import { adjudicate, DECISION, buildDissentMap,
+         makeAgent, ROLES, deterministicReason, deterministicJudge } from './triad.js';
 import { PayPalClient } from '../paypal/client.js';
 import { buildReceipt, receiptCustomId, verifyReceipt, hashFromCustomId } from './receipt.js';
 
@@ -25,12 +26,95 @@ import { buildReceipt, receiptCustomId, verifyReceipt, hashFromCustomId } from '
  * @param {object} deps
  *   { runner?: TriadRunner, paypal?: PayPalClient }
  */
+/**
+ * ★ Seed the audit ledger so a first-time visitor sees a plausible history
+ *   instead of an empty table.
+ *
+ * Every row is produced by the same adjudicate() the live endpoint uses, so the
+ * seeded entries carry the same receipt hashes, the same dissent maps and the
+ * same gate names as a decision made one second ago. Nothing here is fabricated
+ * for display: change a gate in triad.js and these rows change with it.
+ *
+ * The story: a small US skincare brand, a $60/month discretionary budget, week
+ * of ordinary purchases — and one $42 renewal that failed at 3 AM on a Tuesday.
+ */
+function seedLedger(ledger) {
+  const HOUR = 3600e3;
+  const base = Date.now() - 19 * HOUR;
+  // The ledger runs forward in time, so each row is judged against the money
+  // already spent BY THAT POINT, not against the final total. Getting this wrong
+  // is what made every row come back CONDITIONAL: the seeded month was judged as
+  // if all six purchases had happened before any of them.
+  let spentRunning = 0;
+  // Every verdict below was measured against adjudicate() for exactly these
+  // inputs — see the matrix in the README. Nothing here is a guess about what
+  // the engine ought to say. The month runs $60 of discretionary spend, and the
+  // rows are ordered oldest first so the story reads top to bottom:
+  // cheap replacements are approved, the $42 renewal is not, the $89 drive is
+  // refused outright, and the last two land as CONDITIONAL as the budget tightens.
+  const week = [
+    // amount, category,                     hoursAgo   (spend accumulates as we go)
+    [18,  'USB-C cable 2m',                  19],   // APPROVED    — ordinary restock
+    [9,   'Vitamin D3 90ct',                 15],   // APPROVED    — consumable
+    [42,  'Monthly skincare refill',         13],   // CONDITIONAL — the 3 AM renewal
+    [24,  'HDMI 2.1 cable 3m',               10],   // CONDITIONAL — budget tightening
+    [89,  'Portable SSD 1TB',                 6],   // DENIED      — refused outright
+    [12,  'USB-C to Lightning adapter',       2],   // APPROVED    — small, still fits
+  ];
+  for (const [amount, category, hoursAgo] of week) {
+    const purchase = { id: 'seed-' + hoursAgo, amount, category, reason: 'seeded history' };
+    const constraints = { monthlyBudget: 60, spentThisMonth: spentRunning, recentPurchases: [] };
+    // Order matters: the Witness reads the other two verdicts, so build the
+    // Advocate and the Auditor first and hand their actual arguments over. With
+    // empty objects the Witness cannot tell agreement from disagreement, falls
+    // through to the split case, and returns a condition — which makes every
+    // seeded row CONDITIONAL no matter how well it fits the budget.
+    const advocate = deterministicReason(makeAgent(ROLES.ADVOCATE, 'seed', constraints), purchase);
+    const auditor  = deterministicReason(makeAgent(ROLES.AUDITOR,  'seed', constraints), purchase);
+    const args = {
+      advocate,
+      auditor,
+      witness: deterministicJudge(makeAgent(ROLES.WITNESS, 'seed', constraints), purchase, advocate, auditor),
+    };
+    const result = adjudicate(purchase, args, 2);
+    const receipt = buildReceipt(result, { engine: 'deterministic' });
+    receipt.at = new Date(base - hoursAgo * HOUR).toISOString();
+    receipt.customId = receiptCustomId(receipt);
+    ledger.push({
+      at: receipt.at,
+      purchase: result.purchase,
+      decision: result.decision,
+      votesFor: result.votesFor,
+      votesAgainst: result.votesAgainst,
+      summary: result.dissentMap ? result.dissentMap.summary : 'consensus reached',
+      receiptHash: receipt.hash,
+      customId: receipt.customId,
+      votes: receipt.votes,
+      models: receipt.models,
+      engine: 'deterministic',
+      threshold: 2,
+      dissentMap: result.dissentMap || null,
+      receiptIntact: verifyReceipt(receipt),
+      seeded: true,
+    });
+    // The purchase just made is part of what the NEXT row has to fit inside.
+    if (result.decision !== DECISION.DENIED) spentRunning += amount;
+  }
+}
+
 export function createTriad({ runner, paypal } = {}) {
   const _runner = runner || new TriadRunner();
   const _paypal = paypal || PayPalClient.fromEnv();
 
   const ledger = [];       // every adjudication
   const pendingOrders = new Map(); // purchaseId -> { decision, order }
+
+  // ★ Seed the ledger with the week the demo is telling the story of.
+  //   An empty ledger reads as "nothing has ever happened here", and a ledger
+  //   full of whatever the last person clicked reads as test data. Neither is
+  //   what a reviewer should see first: they should see ordinary weeks of
+  //   small purchases, one of them the $42 renewal that failed at 3 AM.
+  seedLedger(ledger);
 
   async function triadAdjudicate({ amount, category, reason, monthlyBudget, spentThisMonth, recentPurchases } = {}) {
     const purchase = {

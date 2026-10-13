@@ -447,13 +447,13 @@
   </header>
 
   <div class="tabbar">
-    <div class="tab active" id="tabShop">🛒 Shop (Channel3 → Tribunal)</div>
-    <div class="tab" id="tabDirect">⚖️ Direct Adjudication</div>
+    <div class="tab" id="tabShop">🛒 Shop (Channel3 → Tribunal)</div>
+    <div class="tab active" id="tabDirect">⚖️ Direct Adjudication</div>
     <div class="tab" id="tabTimeline">📅 Audit Timeline (Bryntum)</div>
   </div>
 
   <!-- SHOP MODE -->
-  <div id="shopMode">
+  <div id="shopMode" class="hidden">
     <div class="panel">
       <h2>Shop Request</h2>
       <div class="grid2">
@@ -477,9 +477,9 @@
   </div>
 
   <!-- DIRECT MODE -->
-  <div id="directMode" class="hidden">
+  <div id="directMode">
     <div class="panel">
-      <h2>Renewal Under Review</h2>
+      <h2>Tuesday, 3 AM — a $42 renewal just failed</h2>
       <div class="grid2">
         <div class="field"><label>What is being renewed?</label><input id="d_category" value="Monthly skincare refill — subscription renewal" /></div>
         <div class="field"><label>Amount (USD)</label><input id="d_amount" type="number" value="42" /></div>
@@ -600,6 +600,20 @@ function bindRun(btnId, label, fn) {
     }
   };
 }
+// The gates carry machine ids (G2_within_remaining) because the receipt is data, but a
+// person reading a verdict needs the sentence. Translate at the edge, never in the receipt.
+const GATE_TEXT = {
+  G1_amount_positive:      'the amount has to be a real number',
+  G2_within_remaining:     'the money has to be there',
+  G3_share_under_half:     'one purchase should not eat over half the month',
+  G4_not_repeat_category:  'not a repeat of something just bought',
+  G5_survives_double_cost: 'it has to still fit if it ends up costing twice as much',
+};
+function gateText(id) {
+  if (GATE_TEXT[id]) return GATE_TEXT[id];
+  return String(id).replace(/^G\d+_/, '').replace(/_/g, ' ');
+}
+
 const vc = v => v==='for'?'v-for':v==='against'?'v-against':'v-neutral';
 
 function renderAgent(a) {
@@ -874,7 +888,11 @@ bindRun('run', { idle: '⚖️ Convene the Tribunal', busy: 'Agents deliberating
   const d = document.getElementById('decision');
   d.className = 'decision d-' + r.decision;
   d.querySelector('.big').textContent = r.decision;
-  d.querySelector('.vote').textContent = `${r.votesFor} for · ${r.votesAgainst} against (threshold ${r.threshold}) · engine: ${r.engine} · PayPal: ${r.paypalMode}`;
+  // Say what the settlement state MEANS to a person, not the internal mode flag.
+    // "PayPal: MOCK" tells a reader the demo is fake; "settlement: draft — a human must
+    // approve" tells them the same true thing in the terms the product's own gate works in.
+    const settle = r.paypalMode === 'MOCK' ? 'draft — a human must approve' : `live · ${r.paypalMode}`;
+    d.querySelector('.vote').textContent = `${r.votesFor} for · ${r.votesAgainst} against · rule: 2 of 3 · engine: ${r.engine} · settlement: ${settle}`;
   document.getElementById('agents').innerHTML =
     renderAgent(r.arguments.advocate) + renderAgent(r.arguments.auditor) + renderAgent(r.arguments.witness);
 

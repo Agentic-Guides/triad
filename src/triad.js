@@ -23,6 +23,23 @@
 // エージェント定義
 // ---------------------------------------------------------------------------
 
+/**
+ * The gates are machine-checked rules with stable ids, because the receipt has to
+ * survive an audit. A human reading the objection needs the sentence, not the id.
+ * Keep both: gates[].id for the record, gateSentence() for the person.
+ */
+const GATE_SENTENCE = {
+  G1_amount_positive:      'the amount is not a real number',
+  G2_within_remaining:     'the money is not there any more',
+  G3_share_under_half:     'one purchase should not eat over half the month',
+  G4_not_repeat_category:  'this repeats something bought recently',
+  G5_survives_double_cost: 'it would not fit any more if it cost twice as much',
+};
+function gateSentence(id) {
+  if (GATE_SENTENCE[id]) return GATE_SENTENCE[id];
+  return String(id).replace(/^G\d+_/, '').replace(/_/g, ' ');
+}
+
 export const ROLES = {
   ADVOCATE: 'advocate', // 買いたい
   AUDITOR: 'auditor',   // 止めたい
@@ -185,7 +202,10 @@ export function deterministicReason(agent, purchase) {
 
     const failedGates = gates.filter(g => !g.pass).map(g => g.id);
     if (failedGates.length) {
-      reasons.push(`Failed audit gates: ${failedGates.join(', ')}.`);
+      // Name the objection in a sentence a person can act on. The machine ids
+      // (G3_share_under_half) still travel in gates[].id for the receipt, but the
+      // reason a human reads should say what is wrong, not which rule caught it.
+      reasons.push(`Blocked by ${failedGates.map(gateSentence).join('; ')}.`);
       // ★ Gates decide the verdict: any failed gate is an objection, and the
       //   objection has to name itself so a human can see what to fix.
       verdict = 'against';
