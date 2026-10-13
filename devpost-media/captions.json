@@ -1,0 +1,8 @@
+{
+  "01": "Three AI agents debate a failed $42 renewal, and a PayPal subscription moves only on their consensus. Every decision is hashed into the payment: the receipt is the audit trail.",
+  "02": "Give the agents a category and a budget. Channel3 finds real products; the Tribunal judges every candidate. Nothing is bought until two of the three agree.",
+  "03": "A $90 purchase against a $60 budget: the Auditor and the Witness block it. The dissent map names who disagreed, and the ledger keeps the proof.",
+  "04": "A $42 renewal comes back CONDITIONAL: one agent for, one against, one judging. The agents only propose — PayPal hands a human the approval link, and money moves after that tap.",
+  "05": "One bar per agent vote on the Bryntum timeline: green approved, red blocked, blue neutral. Open disputes stay flagged like a triage board.",
+  "06": "Every decision, every vote, every receipt in one AG Grid dashboard. Each row carries the hash that was stamped into the PayPal order, so any change after the fact is detectable."
+}
