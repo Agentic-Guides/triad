@@ -124,5 +124,5 @@ We would rather a judge trust us than be surprised.
 ## Try it out
 
 - **Code:** https://github.com/Agentic-Guides/triad
-- **Video:** <the 5-minute walkthrough — link added at submission time>
+- **Video:** 2:33, 1080p — `devpost-media/tuesday_submission_v9_1080p.mp4` in the repo; YouTube link added at submission time.
 - **Run it:** `git clone`, then `node demo/server.mjs` → <http://localhost:8787>. No keys needed.

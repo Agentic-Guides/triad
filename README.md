@@ -6,8 +6,8 @@
 
 A working prototype for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/).
 
-**Code:** https://github.com/Agentic-Guides/triad · **Demo video:** 5:00, 1080p, no narration —
-`devpost-media/tuesday_submission_v8_1080p_hq.mp4`
+**Code:** https://github.com/Agentic-Guides/triad · **Demo video:** 2:33, 1080p —
+`devpost-media/tuesday_submission_v9_1080p.mp4`
 
 **Run it in one command** — no keys needed, the demo falls back to a deterministic engine, a mock
 PayPal client and a curated catalogue, so it always runs:
@@ -59,7 +59,9 @@ The card shows both hashes so you can see exactly what was compared.
 
 ### The 5-minute walkthrough
 
-[Demonstration video](devpost-media/tuesday_submission_v8_1080p_hq.mp4) — 5:00, 1080p, no narration.
+[Demonstration video](devpost-media/tuesday_submission_v9_1080p.mp4) — 2:33, 1080p. Narrated, and
+every verdict in it is the demo running: APPROVED, DENIED, and the money-gate suite returning
+31 passed / 0 failed on screen.
 Six screenshots are in `devpost-media/`, with the captions they carry in `devpost-media/captions.json`.
 
 ### What the agents argue about — the real catalogue
