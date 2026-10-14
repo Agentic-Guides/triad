@@ -16,3 +16,10 @@ devpost-video/
 *.before-jpg
 *.before-imgsize
 *.before-*
+
+# OAuth credentials -- never commit these
+*client_secret*
+*token*
+*credentials*
+client_secret.json
+youtube_token.json
