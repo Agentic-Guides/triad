@@ -73,7 +73,7 @@ The demo opens on the story: TUESDAY, 3 AM — A $42 RENEWAL JUST FAILED.
 |---|---|
 | PayPal Orders v2 REST (paypal/client.js) | OAuth2 client-credentials token → POST /v2/checkout/orders with the hash in custom_id. No SDK dependency. |
 | Three independent LLMs | deepseek-v4.1-flash (Advocate), gemma4:31b (Auditor), gpt-oss:120b (Witness) — three models, three prompts, no shared state. |
-| Audit gates | G1_amount_positive, G2_within_remaining, G3_share_under_half, G4_not_repeat_category, G5_sufficient_confidence. The Auditor rejects with named gates, not opinions. |
+| Audit gates | G1_amount_positive, G2_within_remaining, G3_share_under_half, G4_not_repeat_category, G5_survives_double_cost. The Auditor rejects with named gates, not opinions. |
 | Receipts | Canonical JSON → SHA-256 → `triad1:<hash>`, carried in the order's custom_id. The receipt is the audit trail. |
 | AG Grid | The governance dashboard: every decision, every vote, every hash in one ledger. |
 | Bryntum | The vote timeline — one bar per agent vote, green approved / red blocked / blue neutral. |

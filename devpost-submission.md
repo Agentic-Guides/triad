@@ -77,9 +77,9 @@ charge down the side. The demo recomputes it live when you press **Show me all 1
 
 | charge \ budget | $30 | $60 | $150 | $400 |
 |---|---|---|---|---|
-| **$9** | CONDITIONAL | APPROVED | APPROVED | APPROVED |
-| **$18** | CONDITIONAL | CONDITIONAL | APPROVED | APPROVED |
-| **$42** | DENIED | CONDITIONAL | CONDITIONAL | APPROVED |
+| **$9** | APPROVED | APPROVED | APPROVED | APPROVED |
+| **$18** | CONDITIONAL | APPROVED | APPROVED | APPROVED |
+| **$42** | DENIED | CONDITIONAL | APPROVED | APPROVED |
 | **$90** | DENIED | DENIED | CONDITIONAL | APPROVED |
 
 Bigger charge, stricter verdict. Bigger budget, looser verdict. Every cell moves for a reason.

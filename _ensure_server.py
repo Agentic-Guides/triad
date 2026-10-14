@@ -10,6 +10,7 @@ moment. Pin the absolute interpreter and hand it to the server.
 
 Run:  python _ensure_server.py
 """
+import json
 import os
 import subprocess
 import sys
@@ -47,6 +48,21 @@ def ok():
         return False
 
 
+def proof_works():
+    """The page's money-gate button only works if the server can spawn a working
+    node. Measured: a server started by an older shell (no nodejs on PATH, no
+    TRIAD_NODE) answers /api/ledger fine but returns exit code 3221225794 from
+    /api/proof, because its child spawn dies on startup. A live server is
+    therefore NOT proof that the demo is healthy -- ask the endpoint that needs
+    the child process."""
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:8787/api/proof", timeout=200) as r:
+            j = json.loads(r.read())
+        return bool(j.get("passed")) and j.get("exitCode") == 0
+    except Exception:
+        return False
+
+
 def ensure(verbose=True):
     node = find_node()
     if not node:
@@ -54,10 +70,16 @@ def ensure(verbose=True):
             print("  server: no working node found")
         return False
 
+    # A live server is not enough: /api/ledger answers even when the child spawn is
+    # broken. Only a passing /api/proof proves the demo is actually healthy, and
+    # that is the button a judge presses. Restart if it fails.
+    if ok() and proof_works():
+        if verbose:
+            print("  server: up and /api/proof passes (%s)" % node)
+        return True
     if ok():
         if verbose:
-            print("  server: already up (%s)" % node)
-        return True
+            print("  server: up but /api/proof fails -- restarting with %s" % node)
 
     # clear whatever holds the port
     r = subprocess.run(
@@ -72,21 +94,21 @@ def ensure(verbose=True):
 
     env = dict(os.environ)
     env["PATH"] = os.path.dirname(node) + os.pathsep + env.get("PATH", "")
-    # The server spawns `node tests/moneyGate.test.js` for /api/proof; hand it the
+    # The server spawns `node tests/moneyGate.test.js` for /api/proof. Give it the
     # same absolute interpreter so the child cannot fail to start.
     env["TRIAD_NODE"] = node
 
     log = open(LOG, "w", encoding="utf-8")
     subprocess.Popen([node, "demo/server.mjs"], cwd=BASE, stdout=log,
                      stderr=subprocess.STDOUT, env=env)
-    for _ in range(12):
+    for _ in range(20):
         time.sleep(2)
-        if ok():
+        if ok() and proof_works():
             if verbose:
-                print("  server: started with %s" % node)
+                print("  server: started with %s, /api/proof passes" % node)
             return True
     if verbose:
-        print("  server: FAILED to start")
+        print("  server: FAILED to start or /api/proof still failing")
     return False
 
 
