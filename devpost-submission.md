@@ -5,7 +5,7 @@
 Most "AI spending" demos prove an agent can pay. Tuesday proves it cannot. When a $42
 subscription renewal fails at 3 AM, three independent LLMs — Advocate, Auditor, Witness —
 argue retry / downgrade / release, and **nothing reaches PayPal unless all three agree and a
-human signs off**. The vote, including the disagreement, is hashed into the PayPal order's
+human finishes the capture step in PayPal**. The vote, including the disagreement, is hashed into the PayPal order's
 `custom_id`, so the reason a payment was allowed is readable from the payment record itself.
 
 ---
@@ -97,6 +97,12 @@ We would rather a judge trust us than be surprised.
   about the purchase, not the branding.
 - **Runs without keys:** the deterministic engine, a mock PayPal client and a mock catalogue.
   That is the default, so the demo always runs. `SETUP.md` explains how to run live.
+- **What changes with no keys, precisely:** the three-agent tribunal still runs and still gates the
+  order — but each vote comes from a **deterministic rule engine**, not from an LLM. The `engine`
+  field on the verdict line reads `deterministic`. The three model names you see are the ones used
+  when `OLLAMA_API_KEY` is set. The money gate, the SHA-256 receipts, the ledger, the 4x4 grid and
+  the timeline are our code and behave identically in both modes; only the source of the three
+  opinions changes. The video was recorded with the live models.
 - **Not implemented:** Subscriptions v1 and the PayPal Agent Toolkit (`@paypal/mcp`). The
   settlement path here is Orders v2 REST. The Agent Toolkit is the integration point this
   design moves to in production — we say so in the README rather than implying it ships.

@@ -14,7 +14,7 @@ Tuesday
 ## Elevator pitch (tagline, ~200 chars)
 
 ```
-Anna's skincare brand bills $42/month to 12,000 subscribers. When a renewal fails at 3 AM, three AI agents debate retry / downgrade / release — and nothing reaches PayPal unless they agree and a human signs off.
+Anna's skincare brand bills $42/month to 12,000 subscribers. When a renewal fails at 3 AM, three AI agents debate retry / downgrade / release — and nothing reaches PayPal unless they agree, and nothing is captured unless a human finishes the payment in PayPal.
 ```
 
 ---
@@ -126,6 +126,11 @@ purchase, not the branding.
 
 Runs without keys: the deterministic engine, a mock PayPal client and a mock catalogue. That is
 the default, so the demo always runs. SETUP.md explains how to run live.
+
+What changes with no keys, precisely: the tribunal still runs and still gates the order, but each
+vote comes from a deterministic rule engine rather than an LLM -- the `engine` field on the verdict
+line reads `deterministic`. The money gate, the SHA-256 receipts, the ledger, the grid and the
+timeline are our code and behave identically in both modes. The video was recorded with live models.
 
 Not implemented: Subscriptions v1 and the PayPal Agent Toolkit (@paypal/mcp). The settlement
 path here is Orders v2 REST. The Agent Toolkit is the integration point this design moves to in

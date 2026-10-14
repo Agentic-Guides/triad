@@ -22,7 +22,7 @@ instructions, including the live PayPal sandbox path, are in [Run It](#run-it) a
 
 **Sponsor tools used:** PayPal ✅ · AG Grid ✅ · Bryntum ✅ · Channel3 ✅
 
-> **Three independent LLMs decide; PayPal settles. Nothing is renewed unless the three agents agree and a human signs off. The decision — including the disagreement — is hashed and stamped into the PayPal order's `custom_id`, so the reason a payment was allowed is readable from the payment record itself.**
+> **Three independent LLMs decide; PayPal settles. Nothing is renewed unless the three agents agree, and nothing is captured unless a human finishes the payment in PayPal. The decision — including the disagreement — is hashed and stamped into the PayPal order's `custom_id`, so the reason a payment was allowed is readable from the payment record itself.**
 
 ![Tuesday — main screen](docs/screenshots/01_main.png)
 
@@ -397,7 +397,7 @@ node tests/moneyGate.test.js   # asserts createOrder is called 0 times on DENIED
 ```
 
 Most "AI spending" demos prove an agent *can* pay. This one proves it **cannot** — unless three
-independent agents agree, and a human signs off.
+independent agents agree, and a human finishes the capture step in PayPal.
 
 > **A note on PayPal's design.** In the sandbox, an `APPROVAL_PENDING` subscription **cannot be
 > activated by an API call** — PayPal requires the buyer to approve. We verified this directly
@@ -428,7 +428,20 @@ npm run test:gate   # just the money gate
 npm run test:smoke  # boots the real server and drives the full API
 ```
 
-Judges can run the whole thing with **no keys at all** — every integration degrades gracefully.
+Judges can run the whole thing with **no keys at all** — but be precise about what that means, because
+it is the difference between reading the code and being misled by it.
+
+| With no keys (the default) | With `OLLAMA_API_KEY` set |
+|---|---|
+| The three-agent tribunal **runs**, on a **deterministic rule engine** — the same gates, the same three votes, the same verdicts, reproducible | The same flow, but each vote comes from a **real LLM**: `deepseek-v4.1-flash`, `gemma4:31b`, `gpt-oss:120b` |
+| The PayPal path runs against a **mock client**; no network calls | Orders v2 REST against the **real PayPal sandbox** |
+| The catalogue is a **curated 24-product set** | Channel3 live search |
+
+So: **the money gate, the receipts, the ledger, the grid and the timeline are real in both modes** —
+they are our code, not a fixture. What changes is where the three *opinions* come from. The demo you
+run with no keys will not hallucinate an LLM debate; it will show you a rule engine wearing the same
+three names, and the `engine` field on the verdict line says `deterministic` when that is the case.
+The video was recorded with the live models.
 
 ### Optional: enable the live integrations
 
