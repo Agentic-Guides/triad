@@ -26,6 +26,11 @@ instructions, including the live PayPal sandbox path, are in [Run It](#run-it) a
 
 ![Tuesday — main screen](docs/screenshots/01_main.png)
 
+The demo is a single page in a light palette — cream, white, one red accent — and every surface a
+judge looks at is on it: the Tribunal's debate, the candidate grid (AG Grid), the vote timeline
+(Bryntum) and the receipt ledger. No dark panel dropped into the middle of it, no separate admin
+tool to find.
+
 ### Prove it yourself, in the browser
 
 Every claim this project makes is a testable statement, so the demo does not ask you to believe

@@ -91,14 +91,15 @@ We would rather a judge trust us than be surprised.
 - **Real:** the PayPal Orders v2 REST path, the hash round-trip in `custom_id`, the money
   gate (asserted by 31 passing tests), the three-model debate, the gates, the ledger, the
   product catalogue flow.
+- **Product images:** real photographs, 24 of them, generated for this project with FLUX
+  (Cloudflare Workers AI) and served by the demo itself — they appear in the candidate grid
+  and on the recommendation card. The labels are deliberately blank, because the decision is
+  about the purchase, not the branding.
 - **Runs without keys:** the deterministic engine, a mock PayPal client and a mock catalogue.
   That is the default, so the demo always runs. `SETUP.md` explains how to run live.
 - **Not implemented:** Subscriptions v1 and the PayPal Agent Toolkit (`@paypal/mcp`). The
   settlement path here is Orders v2 REST. The Agent Toolkit is the integration point this
   design moves to in production — we say so in the README rather than implying it ships.
-- **Product images:** generated for this project with FLUX (Cloudflare Workers AI) and served
-  by the demo itself. The labels are deliberately blank, because the decision is about the
-  purchase, not the branding.
 
 ## Built with
 
