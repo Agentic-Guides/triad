@@ -10,7 +10,18 @@ build/
 *.zip
 *.bak
 *.before*.bak
-devpost-video/
+
+# The video build directory holds large intermediates -- Kokoro wavs, per-beat
+# clips, the take -- that a judge does not need. The three scripts that MAKE the
+# video do belong in the repo: the README says how the video was produced, and a
+# claim about a build should ship with the build.
+#
+# Note the shape: `devpost-video/*` with a re-include for *.py, NOT
+# `devpost-video/`. Git never descends into an excluded directory, so a
+# `!devpost-video/*.py` line after `devpost-video/` cannot re-include anything
+# (measured: git check-ignore still matched the scripts).
+devpost-video/*
+!devpost-video/*.py
 
 # Editor/rollback backups — never commit these
 *.before-jpg
