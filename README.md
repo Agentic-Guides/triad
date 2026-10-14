@@ -6,6 +6,20 @@
 
 A working prototype for the [PayPal AI Hackathon](https://paypalaihackathon.devpost.com/).
 
+**Code:** https://github.com/Agentic-Guides/triad · **Demo video:** 5:00, 1080p, no narration —
+`devpost-media/tuesday_submission_v8_1080p_hq.mp4`
+
+**Run it in one command** — no keys needed, the demo falls back to a deterministic engine, a mock
+PayPal client and a curated catalogue, so it always runs:
+
+```bash
+git clone https://github.com/Agentic-Guides/triad.git && cd triad
+node demo/server.mjs          # → http://localhost:8787
+```
+
+Then press the three buttons under **Prove it yourself** to check the claims in this file. Full
+instructions, including the live PayPal sandbox path, are in [Run It](#run-it) and [SETUP.md](SETUP.md).
+
 **Sponsor tools used:** PayPal ✅ · AG Grid ✅ · Bryntum ✅ · Channel3 ✅
 
 > **Three independent LLMs decide; PayPal settles. Nothing is renewed unless the three agents agree and a human signs off. The decision — including the disagreement — is hashed and stamped into the PayPal order's `custom_id`, so the reason a payment was allowed is readable from the payment record itself.**
