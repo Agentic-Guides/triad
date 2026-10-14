@@ -79,12 +79,13 @@ the label is deliberately blank, because the decision must be about the *purchas
 `deepseek-v4.1-flash` (Advocate) · `gemma4:31b` (Auditor) · `gpt-oss:120b` (Witness).
 Each argues in its own words, states a confidence, and votes. **Disagreement is surfaced, not hidden.**
 
-| Approved — 2 for · 0 against | Blocked by dissent — 1 for · 2 against |
+| Conditional — the Tribunal splits | Blocked by dissent — 1 for · 2 against |
 |---|---|
-| ![APPROVED — the Tribunal agrees and PayPal settles](docs/screenshots/04_debate.png) | ![DENIED — the Auditor and Witness block an over-budget charge](docs/screenshots/03_denied.png) |
+| ![CONDITIONAL — the Tribunal splits, and the dissent is kept](docs/screenshots/04_debate.png) | ![DENIED — the Auditor and Witness block an over-budget charge](docs/screenshots/03_denied.png) |
 
-*Left: a $42 renewal the Tribunal approves, with the PayPal approval link. Right: a $90 charge against a
-$60 monthly budget — the Auditor and Witness block it, and the dissent map shows exactly who disagreed.*
+*Left: a $42 renewal against a $60 budget comes back CONDITIONAL — one vote for, one against, one
+judging — and the purchase does not proceed on a rounded-up yes. Right: a $90 charge against the same
+$60 budget: the Auditor and Witness block it, and the dissent map shows exactly who disagreed.*
 
 ### The governance dashboard — every decision, every vote, every hash
 
