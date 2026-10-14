@@ -71,7 +71,7 @@ const server = createServer(async (req, res) => {
     const root = resolve(__dir, '..');
     const file = join(root, 'tests', 'moneyGate.test.js');
     return await new Promise((resolve) => {
-      const child = spawn(process.execPath, [file], { cwd: root });
+      const child = spawn(process.env.TRIAD_NODE || process.execPath, [file], { cwd: root });
       let out = '';
       const cap = (b) => { if (out.length < 60000) out += b.toString(); };
       child.stdout.on('data', cap);
