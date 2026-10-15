@@ -120,9 +120,21 @@ export function createTriad({ runner, paypal } = {}) {
   seedLedger(ledger);
 
   async function triadAdjudicate({ amount, category, reason, monthlyBudget, spentThisMonth, recentPurchases } = {}) {
+    // An unquantified purchase cannot be audited (see G1_amount_positive), and a
+    // negative amount is not a price at all. Reject both before the debate runs:
+    // Number('') is 0 and Number(null) is 0, so a blank field used to reach the
+    // tribunal as "$0.00" and could still come out CONDITIONAL -- and CONDITIONAL
+    // is what lets the PayPal order fire. That let a zero-value order through, so
+    // the guard belongs here rather than only in the auditor's reasons.
+    const parsed = Number(amount);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      const bad = { ok: false, error: 'amount must be a positive number', amount: amount ?? null };
+      return bad;
+    }
+
     const purchase = {
       id: `pur_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
-      amount: Number(amount) || 0,
+      amount: parsed,
       category: category || 'purchase',
       reason: reason || 'unspecified',
     };
