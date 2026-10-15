@@ -1074,6 +1074,21 @@ bindRun('run', { idle: '⚖️ Convene the Tribunal', busy: 'Agents deliberating
   const r = await api('/api/adjudicate', body);
   document.getElementById('result').classList.remove('hidden');
   const d = document.getElementById('decision');
+
+  // The endpoint rejects an unquantified purchase before the debate runs (a blank
+  // or negative amount is not a price). Say that in the product's own words instead
+  // of painting "undefined" into the decision slot.
+  if (!r || r.ok === false || !r.decision) {
+    d.className = 'decision d-DENIED';
+    d.querySelector('.big').textContent = 'NOT ADJUDICATED';
+    d.querySelector('.vote').textContent =
+      (r && r.error) || 'the purchase could not be audited';
+    document.getElementById('agents').innerHTML = '';
+    document.getElementById('dissentWrap').classList.add('hidden');
+    document.getElementById('paypalWrap').classList.add('hidden');
+    return;
+  }
+
   d.className = 'decision d-' + r.decision;
   d.querySelector('.big').textContent = r.decision;
   // Say what the settlement state MEANS to a person, not the internal mode flag.

@@ -61,6 +61,10 @@ export class PayPalClient {
    * Create an order for a tribunal-approved purchase.
    * @param {object} purchase { amount, currency, reason, category }
    * @param {object} options  { returnUrl, cancelUrl }
+   *
+   * Redirect URLs live in payment_source.paypal.experience_context for Orders v2
+   * (the v1-era application_context block is not what current docs describe), so
+   * the buyer's approval link carries the landing pages PayPal should return to.
    */
   async createOrder(purchase, options = {}) {
     const currency = purchase.currency || 'USD';
@@ -73,11 +77,15 @@ export class PayPalClient {
           custom_id: purchase.customId || purchase.id || `triad_${Date.now()}`,
         },
       ],
-      application_context: {
-        brand_name: 'Tuesday',
-        user_action: 'PAY_NOW',
-        return_url: options.returnUrl || 'https://example.com/return',
-        cancel_url: options.cancelUrl || 'https://example.com/cancel',
+      payment_source: {
+        paypal: {
+          experience_context: {
+            brand_name: 'Tuesday',
+            user_action: 'PAY_NOW',
+            return_url: options.returnUrl || 'https://example.com/return',
+            cancel_url: options.cancelUrl || 'https://example.com/cancel',
+          },
+        },
       },
     };
     return this._req('POST', '/v2/checkout/orders', body);
