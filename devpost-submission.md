@@ -30,8 +30,10 @@ The demo opens on the story: **TUESDAY, 3 AM — A $42 RENEWAL JUST FAILED.**
 1. **Three agents take positions.** Advocate argues for the customer and the revenue.
    Auditor argues against spending money the budget does not have. Witness is neutral and
    judges both arguments as written.
-2. **They debate per candidate.** Give it a category and a monthly budget; it pulls candidate
-   products, and the Tribunal judges every one of them.
+2. **They debate per candidate — then you choose.** Give it a category and a monthly budget; it
+   pulls candidate products and the Tribunal judges every one of them. Click any row to buy that
+   one: Tuesday re-rules on your pick at its real price, and only an APPROVED or CONDITIONAL
+   verdict raises the PayPal order. Pick a refused product and no order is created.
 3. **Disagreement is surfaced, never hidden.** A split verdict does not get rounded to a yes.
    It comes back CONDITIONAL and the dissent map names who voted what and why.
 4. **A mechanically enforced money gate.** If the verdict is DENIED or DISSENT, the code

@@ -173,7 +173,9 @@ can re-verify a past decision without trusting the agents that made it.
 
 > **The one screen that proves it:** the candidate table. Five products, three different verdicts,
 > each with the gate that decided it. A tribunal that always says yes is a rubber stamp — this one
-> refuses $89 of a $60 budget and says which rule refused it.
+> refuses $89 of a $60 budget and says which rule refused it. **Click any row to buy that one:**
+> Tuesday re-rules on the product you picked, at its real price, and only an APPROVED or
+> CONDITIONAL verdict raises the PayPal order. Pick a refused product and no order is created.
 
 ## The specific problem
 
@@ -260,7 +262,7 @@ src/triad.js       — Adversarial consensus engine (roles, arguments, adjudicat
 src/runner.js      — Runs the 3 agents on 3 different vendors' models (Ollama Cloud)
 src/receipt.js     — Consensus receipt: canonical hash of decision + votes + reasoning fingerprints
 src/channel3.js    — Channel3 product-catalog adapter (live API; curated fallback without a key)
-src/commerce.js    — Shop flow: Channel3 candidates → tribunal adjudication
+src/commerce.js    — Shop flow: Channel3 candidates → tribunal adjudication → the row the judge picks
 src/webmcp.js      — Registers the tribunal as WebMCP tools + orchestrates PayPal settlement
 paypal/client.js   — PayPal Orders v2 REST client (Sandbox, + deterministic mock fallback)
 paypal/client.js — PayPal Orders v2 REST client (OAuth2 token, create/capture/get order)
@@ -409,7 +411,7 @@ independent agents agree, and a human finishes the capture step in PayPal.
 
 | Tool | Purpose |
 |---|---|
-| `triadShop` | Channel3 candidates → tribunal adjudication → consensus recommendation |
+| `triadShop` | Channel3 candidates → tribunal adjudication → consensus recommendation. The judge can then override the ranking by picking a row. |
 | `triadAdjudicate` | Run the 3-agent debate → decision + dissent map + consensus receipt |
 | `triadCreateOrder` | Create a PayPal order for an approved purchase (stamps the receipt hash into `custom_id`) |
 | `triadCaptureOrder` | Capture (finalize) — the human-approval step |
