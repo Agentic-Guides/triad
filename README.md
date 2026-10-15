@@ -259,7 +259,7 @@ Bryntum  — the renewal timeline: which failures are still open
 src/triad.js       — Adversarial consensus engine (roles, arguments, adjudicate, dissent map)
 src/runner.js      — Runs the 3 agents on 3 different vendors' models (Ollama Cloud)
 src/receipt.js     — Consensus receipt: canonical hash of decision + votes + reasoning fingerprints
-src/channel3.js    — Channel3 product-catalog adapter (real API)
+src/channel3.js    — Channel3 product-catalog adapter (live API; curated fallback without a key)
 src/commerce.js    — Shop flow: Channel3 candidates → tribunal adjudication
 src/webmcp.js      — Registers the tribunal as WebMCP tools + orchestrates PayPal settlement
 paypal/client.js   — PayPal Orders v2 REST client (Sandbox, + deterministic mock fallback)
@@ -460,7 +460,7 @@ node demo/server.mjs
 | **PayPal** | Orders v2 REST (`paypal/client.js`): OAuth2 client-credentials token → create order → capture, with the decision hash in `custom_id`. Sandbox by default in MOCK; live with your own keys. Subscriptions v1 / Agent Toolkit are the production integration point, not implemented here. Deterministic fallback when no PayPal keys are present. |no key. |
 | **AG Grid** | The decision ledger — every renewal, every vote, every receipt hash, with a selection-driven receipt panel. |
 | **Bryntum Scheduler** | The renewal timeline — who decided what, when, and which failed renewals are still unresolved. |
-| **Channel3** | Product discovery — grounds the debate in a real, purchasable SKU (real API, no mocks). |
+| **Channel3** | Product discovery — grounds the debate in a real, purchasable SKU. Live search through the real API when `CHANNEL3_API_KEY` is set; a curated 24-product set when it is not (see the zero-config / configured table above). |
 
 ## Impact
 
