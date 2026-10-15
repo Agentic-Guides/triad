@@ -561,6 +561,7 @@
   <div id="shopMode" class="hidden">
     <div class="panel">
       <h2>Shop Request</h2>
+      <p style="font-size:12.5px;color:var(--dim);margin:2px 0 10px">Name a category and a budget. Tuesday pulls candidates, the tribunal ranks them, and you choose which one gets bought.</p>
       <div class="grid2">
         <div class="field"><label>Category</label><input id="category" value="electronics" /></div>
         <div class="field"><label>Monthly budget (USD)</label><input id="budget" type="number" value="60" /></div>
@@ -576,6 +577,7 @@
       <div id="reco"></div>
       <div class="panel">
         <h2>Candidate Products — evaluated by the Tribunal (AG Grid)</h2>
+        <p style="font-size:12.5px;color:var(--dim);margin:2px 0 10px">Click any row to make that product the one Tuesday settles. The tribunal re-rules on your pick, and only an APPROVED or CONDITIONAL verdict raises a PayPal order.</p>
         <div id="candidateGrid" class="ag-theme-quartz"></div>
       </div>
     </div>
@@ -753,6 +755,14 @@ function initCandidateGrid() {
     ],
     rowData: [],
     defaultColDef: { sortable: true, filter: true, resizable: true },
+    // A catalogue a judge can actually buy from: click a row to make that product
+    // the one Tuesday settles. Without this the tribunal picked for them and the
+    // grid was decoration -- you could read five candidates and choose none.
+    rowSelection: 'single',
+    onRowSelected: (e) => {
+      const row = e.api.getSelectedRows()[0];
+      if (row) selectCandidate(row);
+    },
 
   });
 }
@@ -1020,6 +1030,71 @@ bindRun('shopBtn', { idle: '🛒 Find products & convene the Tribunal', busy: 'C
     fitGridHeight(document.getElementById('candidateGrid'), candidateGridApi, (r.allResults || []).length); }
   await refreshLedger();
 });
+
+// --- Pick a candidate and settle it -------------------------------------------------
+// The tribunal ranks the whole catalogue; this is where a judge overrides the ranking
+// and says "this one". The chosen product is re-adjudicated on its own (so the
+// Advocate/Auditor/Witness argue about THIS product, with its real price), and only an
+// APPROVED or CONDITIONAL verdict raises a PayPal order. DENIED stays refused -- the
+// money gate is the same one the Direct tab uses.
+let selectedSku = null;
+
+async function selectCandidate(row) {
+  selectedSku = row.id || null;
+  const box = document.getElementById('reco');
+  const verdict = String(row.decision || '').toUpperCase();
+  const canSettle = verdict === 'APPROVED' || verdict === 'CONDITIONAL';
+
+  box.innerHTML = `<div class="reco ${verdict === 'CONDITIONAL' ? 'cond' : ''}">
+    ${row.image ? `<img class="reco-img" src="${row.image}" alt="">` : ''}
+    <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px">You picked — tribunal says ${verdict}</div>
+    <div class="t">${row.title} <span style="color:var(--dim);font-weight:400">· ${row.brand}</span></div>
+    <div class="p">$${Number(row.price).toLocaleString()} <span style="font-size:12px;color:var(--dim)">★${row.rating}</span></div>
+    <div id="settleOut" style="font-size:12px;color:var(--dim);margin-top:8px">${canSettle
+      ? 'Settling through PayPal…'
+      : 'Refused by the money gate — no order is created for this product.'}</div>
+  </div>`;
+
+  if (!canSettle) {
+    document.getElementById('paypalWrap').classList.add('hidden');
+    return;
+  }
+
+  // Re-run the debate on the chosen product so the reasons name its real price.
+  const body = {
+    category: `${row.brand} ${row.title}`,
+    amount: Number(row.price),
+    reason: `Judge selected "${row.title}" from the catalogue (rating ${row.rating})`,
+    monthlyBudget: Number(document.getElementById('budget').value),
+    spentThisMonth: Number(document.getElementById('spent').value),
+  };
+  const r = await api('/api/adjudicate', body);
+  const out = document.getElementById('settleOut');
+  if (!r || r.ok === false || !r.decision) {
+    out.textContent = (r && r.error) || 'could not adjudicate this product';
+    return;
+  }
+  if (r.decision !== 'APPROVED' && r.decision !== 'CONDITIONAL') {
+    out.textContent = `Tribunal re-ruled ${r.decision} on its own — no PayPal order raised.`;
+    return;
+  }
+
+  const o = await api('/api/order', {
+    purchaseId: r.purchase.id,
+    returnUrl: 'https://example.com/return',
+    cancelUrl: 'https://example.com/cancel',
+  });
+  let capHtml = '';
+  if (o.ok) {
+    const c = await api('/api/capture', { orderId: o.orderId });
+    capHtml = `<div class="map-row">✓ Captured: <b>${c.capture?.status}</b> (order ${o.orderId})</div>`;
+  }
+  out.innerHTML = `<div class="map-row">Order <b>${o.orderId || o.error}</b> · mode <b>${o.mode || '-'}</b></div>
+    ${o.approvalLink ? `<div class="map-row">Approval: <a href="${o.approvalLink}" target="_blank">${o.approvalLink}</a></div>` : ''}
+    ${capHtml}
+    <div class="map-row" style="color:var(--dim)">Money moves only after the human approves — agents propose, never settle.</div>`;
+  await refreshLedger();
+}
 
 // --- Verify a receipt against the PayPal record, without hunting for the row ---
 // Picks the most recent APPROVED entry, because that is the one a payment actually
