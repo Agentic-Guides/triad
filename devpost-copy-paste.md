@@ -45,8 +45,10 @@ The demo opens on the story: TUESDAY, 3 AM — A $42 RENEWAL JUST FAILED.
    argues against spending money the budget does not have. Witness is neutral and judges
    both arguments as written. Three different models, three different prompts.
 
-2. They debate per candidate. Give it a category and a monthly budget and it pulls candidate
-   products, and the Tribunal judges every one of them.
+2. They debate per candidate - then you choose. Give it a category and a monthly budget and it
+   pulls candidate products; the Tribunal judges every one. Click any row to buy that one:
+   Tuesday re-rules on your pick at its real price, and only an APPROVED or CONDITIONAL verdict
+   raises the PayPal order. Pick a refused product and no order is created.
 
 3. Disagreement is surfaced, never hidden. A split verdict is not rounded up to a yes. It
    comes back CONDITIONAL, and the dissent map names who voted what and why.
