@@ -83,9 +83,9 @@ Each argues in its own words, states a confidence, and votes. **Disagreement is 
 |---|---|
 | ![CONDITIONAL — the Tribunal splits, and the dissent is kept](docs/screenshots/04_debate.png) | ![DENIED — the Auditor and Witness block an over-budget charge](docs/screenshots/03_denied.png) |
 
-*Left: a $42 renewal against a $60 budget comes back CONDITIONAL — one vote for, one against, one
+*Left: a $42 renewal against a $100 budget comes back CONDITIONAL — one vote for, one against, one
 judging — and the purchase does not proceed on a rounded-up yes. Right: a $90 charge against the same
-$60 budget: the Auditor and Witness block it, and the dissent map shows exactly who disagreed.*
+$100 budget: the Auditor and Witness block it, and the dissent map shows exactly who disagreed.*
 
 ### The governance dashboard — every decision, every vote, every hash
 
@@ -96,6 +96,16 @@ $60 budget: the Auditor and Witness block it, and the dissent map shows exactly 
 | ![Bryntum timeline — one bar per agent vote](docs/screenshots/05_timeline.png) | ![Shop request and the gold CTA](docs/screenshots/02_shop.png) |
 
 ---
+
+## Try it now
+
+**Hosted demo — <https://tuesday-paypal.onrender.com>**
+
+It runs on Render's free instance, which sleeps after 15 minutes idle, so the first load can
+take up to a minute while it wakes. Everything on the page works with no keys and no setup.
+
+**Prefer to run it locally?** `npm start`, then open <http://localhost:8787>. Nothing to configure:
+the deterministic engine, a mock PayPal client and a curated catalogue are the defaults.
 
 ## In 10 seconds
 
@@ -463,6 +473,7 @@ node demo/server.mjs
 | **AG Grid** | The decision ledger — every renewal, every vote, every receipt hash, with a selection-driven receipt panel. |
 | **Bryntum Scheduler** | The renewal timeline — who decided what, when, and which failed renewals are still unresolved. |
 | **Channel3** | Product discovery — grounds the debate in a real, purchasable SKU. Live search through the real API when `CHANNEL3_API_KEY` is set; a curated 24-product set when it is not (see the zero-config / configured table above). |
+| **Render** | Hosting for the live demo — a Render Web Service built from this repository's `Dockerfile`. The container carries a `HEALTHCHECK` because a free instance sleeps after 15 minutes idle and the first request can take up to a minute to wake it. |
 
 ## Impact
 
