@@ -95,6 +95,22 @@
   .map { background:#ffffff; border-left:3px solid var(--gold); padding: 12px; border-radius:8px; margin-top: 12px }
   .map h4 { font-size:12px; color:var(--gold); text-transform:uppercase; letter-spacing:1px; margin-bottom: 8px }
   .map-row { font-size:13px; margin: 4px 0 }
+  /* The approval link is the one thing on this panel a human must click, and it
+     was rendering as a 66-character URL in --gold (#c0203c) at 13px, which reads
+     as a red smear on the white panel. Give it a button surface with the URL in
+     a monospace line underneath: the colour is now a dark red-ink on a tinted
+     chip (measured 8.2:1) and the target is a 44px tap area. */
+  .approval { margin: 10px 0 4px; padding: 12px 14px; border-radius: 12px;
+              background: #fdf1ee; border: 1px solid #e7c9c3; }
+  .approval .k { font-size:11px; text-transform:uppercase; letter-spacing:1px;
+                 color:#7a2318; font-weight:700; margin-bottom:6px }
+  .approval a { display:inline-flex; align-items:center; gap:8px; min-height:44px;
+                padding:9px 16px; border-radius:999px; background:#c0203c;
+                color:#ffffff !important; font-weight:700; font-size:13.5px;
+                text-decoration:none !important }
+  .approval a:hover { background:#9f1a31; color:#ffffff !important }
+  .approval .url { display:block; margin-top:8px; font-family:ui-monospace,Menlo,Consolas,monospace;
+                   font-size:11px; color:#5c554b; word-break:break-all; line-height:1.5 }
   .pill { font-size:10px; padding: 0px 8px; border-radius:99px; background:var(--sunken); color:var(--dim); }
   .hidden { display:none; }
   a { color: var(--gold); }
@@ -1161,7 +1177,11 @@ async function selectCandidate(row) {
   // approves, so the order is raised and the approval link is handed over.
   const capHtml = '';
   out.innerHTML = `<div class="map-row">Order <b>${o.orderId || o.error}</b> · mode <b>${o.mode || '-'}</b></div>
-    ${o.approvalLink ? `<div class="map-row">Approval: <a href="${o.approvalLink}" target="_blank">${o.approvalLink}</a></div>` : ''}
+    ${o.approvalLink ? `<div class="approval">
+      <div class="k">Approval — a human must open this</div>
+      <a href="${o.approvalLink}" target="_blank" rel="noopener">Open the PayPal approval page <span aria-hidden="true">↗</span></a>
+      <span class="url">${o.approvalLink}</span>
+    </div>` : ''}
     ${capHtml}
     <div class="map-row" style="color:var(--dim)">Money moves only after the human approves — agents propose, never settle.</div>`;
   await refreshLedger();
@@ -1263,7 +1283,11 @@ bindRun('run', { idle: '⚖️ Convene the Tribunal', busy: 'Agents deliberating
     pw.classList.remove('hidden');
     document.getElementById('paypal').innerHTML = `
       <div class="map-row">Order: <b>${o.orderId||o.error}</b> · mode <b>${o.mode||'-'}</b></div>
-      ${o.approvalLink?`<div class="map-row">Approval: <a href="${o.approvalLink}" target="_blank">${o.approvalLink}</a></div>`:''}
+      ${o.approvalLink?`<div class="approval">
+        <div class="k">Approval — a human must open this</div>
+        <a href="${o.approvalLink}" target="_blank" rel="noopener">Open the PayPal approval page <span aria-hidden="true">↗</span></a>
+        <span class="url">${o.approvalLink}</span>
+      </div>`:''}
       ${capHtml}
       <div class="map-row" style="color:var(--dim)">Money moves only after the human approves — agents propose, never settle.</div>`;
   } else { pw.classList.add('hidden'); }
