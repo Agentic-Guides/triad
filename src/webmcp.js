@@ -226,7 +226,7 @@ export function createTriad({ runner, paypal } = {}) {
       ok: true,
       decision: entry.decision,
       orderId: order.id,
-      approvalLink: order.links?.find(l => l.rel === 'approve')?.href ?? null,
+      approvalLink: order.links?.find(l => l.rel === 'payer-action' || l.rel === 'approve')?.href ?? null,
       mode: _paypal.mode,
       audit: receipt
         ? {

@@ -13,6 +13,27 @@ import { createTriadCommerce } from '../src/commerce.js';
 import { hashFromCustomId } from '../src/receipt.js';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
+
+// Load .env if present, without adding a dependency. Judges can run the demo
+// with `node demo/server.mjs` and no install; credentials stay local, and the
+// PayPal client falls back to MOCK when they are absent.
+{
+  try {
+    const raw = await readFile(join(__dir, '..', '.env'), 'utf8');
+    for (const line of raw.split(/\r?\n/)) {
+      const t = line.trim();
+      if (!t || t.startsWith('#')) continue;
+      const eq = t.indexOf('=');
+      if (eq < 1) continue;
+      const k = t.slice(0, eq).trim();
+      let v = t.slice(eq + 1).trim();
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+        v = v.slice(1, -1);
+      }
+      if (!(k in process.env) && k.startsWith('PAYPAL_')) process.env[k] = v;
+    }
+  } catch { /* no .env — MOCK is fine */ }
+}
 const triad = createTriad();
 const commerce = createTriadCommerce({ triad });
 
