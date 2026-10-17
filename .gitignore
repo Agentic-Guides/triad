@@ -34,3 +34,17 @@ devpost-video/*
 *credentials*
 client_secret.json
 youtube_token.json
+
+# Raw recording material. The demo video belongs on YouTube and Devpost, not in the
+# repository: the takes under _take/ added ~500MB to .git (take1.mp4 alone is 99MB),
+# which makes a clone slow for anyone the judges send to this repo. The finished
+# video is linked from the README and from the submission form.
+#
+# Same shape as devpost-video above: `*` with a re-include, because git never
+# descends into an excluded directory.
+_take/*
+!_take/.gitkeep
+out/
+_tts/
+_shot/
+
