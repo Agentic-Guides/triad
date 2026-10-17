@@ -23,15 +23,18 @@ const DEFAULT_ENDPOINT = 'https://ollama.com/v1/chat/completions';
 //   no reasoning-token overhead) — and it still argues AGAINST convincingly,
 //   which is what makes DISSENT real.
 //
-// ★ 2026-10-18: advocate pinned to the `:1017-cloud` build of the same model.
-//   Ollama published deepseek-v4.1-flash:1017-cloud on 2026-10-17 (same model
-//   family, US-hosted, zero data retention, lower per-task cost). Verified live:
-//   local `ollama pull` succeeds and /api/chat returns completions.
+// ★ 2026-10-18: advocate pinned to the `:1017` build of the same model.
+//   Ollama published deepseek-v4.1-flash:1017 on 2026-10-17 (same model
+//   family, US-hosted, zero data retention, lower per-task cost). Verified live
+//   against https://ollama.com/v1/chat/completions with max_tokens:400 —
+//   the three roles answer in 0.9-1.1s and 18-141 completion tokens.
+//   NOTE the exact tag: the Cloud API lists `:1017` (the local `ollama pull`
+//   alias is `:1017-cloud`, which is NOT the name the HTTP API accepts).
 //   The Devpost write-up still names the model family (deepseek-v4.1-flash); this
 //   is the same family, so the submission stays accurate. Override with
 //   TRIAD_MODEL_ADVOCATE to pin any other tag.
 const DEFAULT_MODELS = {
-  advocate: process.env.TRIAD_MODEL_ADVOCATE || 'deepseek-v4.1-flash:1017-cloud', // DeepSeek
+  advocate: process.env.TRIAD_MODEL_ADVOCATE || 'deepseek-v4.1-flash:1017', // DeepSeek
   auditor: process.env.TRIAD_MODEL_AUDITOR || 'gemma4:31b',            // Google
   witness: process.env.TRIAD_MODEL_WITNESS || 'gpt-oss:120b',          // OpenAI (OSS)
 };
