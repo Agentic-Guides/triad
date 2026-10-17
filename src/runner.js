@@ -24,7 +24,7 @@ const DEFAULT_ENDPOINT = 'https://ollama.com/v1/chat/completions';
 //   which is what makes DISSENT real.
 //
 // ★ 2026-10-18: advocate pinned to the `:1017` build of the same model.
-//   Ollama published deepseek-v4.1-flash:1017 on 2026-10-17 (same model
+//   Ollama published deepseek-v4.1-flash on 2026-10-17 (same model
 //   family, US-hosted, zero data retention, lower per-task cost). Verified live
 //   against https://ollama.com/v1/chat/completions with max_tokens:400 —
 //   the three roles answer in 0.9-1.1s and 18-141 completion tokens.
@@ -34,7 +34,7 @@ const DEFAULT_ENDPOINT = 'https://ollama.com/v1/chat/completions';
 //   is the same family, so the submission stays accurate. Override with
 //   TRIAD_MODEL_ADVOCATE to pin any other tag.
 const DEFAULT_MODELS = {
-  advocate: process.env.TRIAD_MODEL_ADVOCATE || 'deepseek-v4.1-flash:1017', // DeepSeek
+  advocate: process.env.TRIAD_MODEL_ADVOCATE || 'deepseek-v4.1-flash', // DeepSeek
   auditor: process.env.TRIAD_MODEL_AUDITOR || 'gemma4:31b',            // Google
   witness: process.env.TRIAD_MODEL_WITNESS || 'gpt-oss:120b',          // OpenAI (OSS)
 };
