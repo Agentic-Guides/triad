@@ -627,7 +627,7 @@
           <option value="supplements"></option>
           <option value="consumables"></option>
         </datalist>
-        <div class="field"><label>Monthly budget (USD)</label><input id="budget" type="number" value="60" /></div>
+        <div class="field"><label>Monthly budget (USD)</label><input id="budget" type="number" value="100" /></div>
       </div>
       <div class="grid2">
         <div class="field"><label>Already spent this month (USD)</label><input id="spent" type="number" value="0" /></div>
@@ -977,9 +977,10 @@ function initScheduler() {
   if (!host) return;
   // CDN unreachable (or already built) → the rest of the demo still works.
   if (typeof bryntum === 'undefined' || !bryntum.scheduler) {
-    host.innerHTML = '<div style="padding: 16pxcolor:#52525b">Bryntum Scheduler unavailable (CDN blocked). The rest of the demo is unaffected.</div>';
+    host.innerHTML = '<div style="padding:16px;color:#52525b">Bryntum Scheduler is still loading from its CDN. Everything else on this page works without it.</div>';
     return;
   }
+  window.__schedDone = true;
   const { resources, events } = ledgerToSchedulerData(__ledger);
 
   // Metrics for the timeline panel.
@@ -1015,7 +1016,18 @@ function showTab(which) {
     const tab = document.getElementById('tab' + k[0].toUpperCase() + k.slice(1));
     if (tab) tab.classList.toggle('active', k === which);
   }
-  if (which === 'timeline') initScheduler();
+  if (which === 'timeline') {
+    // Bryntum's CSS and UMD bundle come from a CDN and take seconds on a cold
+    // cache. Measured: the tab looked dead for ~6s because the panel was there
+    // but empty. Say what is happening instead of showing nothing.
+    const host = document.getElementById('scheduler');
+    if (host && !host.querySelector('.sched-ready') && !window.__schedDone) {
+      if (typeof bryntum === 'undefined' || !bryntum.scheduler) {
+        host.innerHTML = '<div class="sched-wait" style="padding:16px;color:#5c554b">Loading the Bryntum Scheduler from its CDN…</div>';
+      }
+    }
+    initScheduler();
+  }
 }
 document.getElementById('tabShop').onclick = () => showTab('shop');
 document.getElementById('tabDirect').onclick = () => showTab('direct');
