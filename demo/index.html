@@ -87,9 +87,9 @@
   button.secondary { background:var(--sunken); color:var(--txt); }
   .decision { text-align:center; padding: 16px; border-radius:12px; margin-bottom: 16px }
   .d-APPROVED { background:#dcfce7; border:1px solid #166534; }
-  .d-CONDITIONAL { background:#92400e; border:1px solid #b45309; }
+  .d-CONDITIONAL { background:#92400e; border:1px solid #b45309; color:#ffffff; }
   .d-DENIED { background:#fee2e2; border:1px solid #991b1b; }
-  .d-DISSENT { background:#9a3412; border:1px solid #c2410c; }
+  .d-DISSENT { background:#9a3412; border:1px solid #c2410c; color:#ffffff; }
   .decision .big { font-size:26px; font-weight:800; letter-spacing:2px; }
   .vote { color:var(--dim); font-size:12px; margin-top: 4px }
   .map { background:#ffffff; border-left:3px solid var(--gold); padding: 12px; border-radius:8px; margin-top: 12px }
@@ -154,6 +154,17 @@
   .reco.cond .p { color:#ffd9a0; }
   .reco.cond span[style] { color:#fde8cf !important; }
   .reco.cond div[style] { color:#fde8cf !important; }
+  /* Links are --gold (#c0203c) globally, which is 1.19:1 on the brown card and
+     the dark conditional/dissent chips — measured unreadable. Inside any dark
+     surface, links have to carry a light colour instead. */
+  /* Two different surfaces need two different link colours:
+     .reco.cond is solid brown (#92400e) -> link must be LIGHT
+     .d-CONDITIONAL/.d-DISSENT chips are a 10% tint on white -> link must be DARK.
+     Sharing one colour made the approval link 1.32:1 on the brown card. */
+  .reco.cond a { color:#ffd9a0 !important; text-decoration:underline; }
+  .d-CONDITIONAL a, .d-DISSENT a { color:#7c2d12 !important; text-decoration:underline; }
+    .reco.cond a:hover { color:#ffffff !important; }
+  .d-CONDITIONAL a:hover, .d-DISSENT a:hover { color:#000000 !important; }
   .reco .t { font-size:15px; font-weight:700; }
 .proof-lede { font-size: 13.5px; color: var(--dim); line-height: 1.65; margin: 0 0 16px; max-width: 70ch }
 .proof-lede code { font-size: 12.5px; background: var(--sunken); padding: 1px 5px; border-radius: 5px }
@@ -329,9 +340,13 @@
   .decision { border-radius: 22px; padding: 24px }
   .decision .big { font-size: 30px; letter-spacing: .04em; font-weight: 800; }
   .d-APPROVED    { background: rgba(16,185,129,.10); border: 1px solid rgba(16,185,129,.42); }
-  .d-CONDITIONAL { background: rgba(245,158,11,.10); border: 1px solid rgba(245,158,11,.42); }
+  /* The chip is a TINTED surface, not the solid brown: measured, this rule lands
+     after the solid one and wins, so the foreground has to be the dark text that
+     works on a near-white tint. The solid brown is used elsewhere; the two must
+     not share a colour. */
+  .d-CONDITIONAL { background: rgba(245,158,11,.10); border: 1px solid rgba(245,158,11,.42); color:#7c2d12; }
   .d-DENIED      { background: rgba(239,68,68,.10); border: 1px solid rgba(239,68,68,.42); }
-  .d-DISSENT     { background: rgba(249,115,22,.10); border: 1px solid rgba(249,115,22,.42); }
+  .d-DISSENT     { background: rgba(249,115,22,.10); border: 1px solid rgba(249,115,22,.42); color:#7c2d12; }
 
 
   /* ═══ ★AG Grid の高さを【行数に応じて伸ばす】═══════════════════════
