@@ -202,6 +202,13 @@
             background:#fff; box-shadow:0 1px 4px rgba(60,45,30,.16) }
 .reco::after { content:''; display:block; clear:both }
   .reco .p { color:var(--gold); font-size:20px; font-weight:800; }
+  /* Category chips: the four stocked categories, so a judge clicks instead of guessing. */
+  .cat-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px }
+  .cat-chip { min-height:34px; padding:6px 12px; font-size:12px; font-weight:600;
+              border-radius:999px; border:1px solid var(--line-2); background:var(--sunken);
+              color:#241f1a; cursor:pointer; transition:all .2s cubic-bezier(.32,.72,0,1) }
+  .cat-chip:hover { border-color:#c0203c; color:#241f1a }
+  .cat-chip.is-on { background:#c0203c; border-color:#c0203c; color:#ffffff }
 
   
   /* ═══════════════════════════════════════════════════════════════════
@@ -571,7 +578,24 @@
       <h2>Shop Request</h2>
       <p style="font-size:12.5px;color:var(--dim);margin:2px 0 10px">Name a category and a budget. Tuesday pulls candidates, the tribunal ranks them, and you choose which one gets bought.</p>
       <div class="grid2">
-        <div class="field"><label>Category</label><input id="category" value="electronics" /></div>
+        <div class="field"><label>Category</label><input id="category" value="electronics" list="category-list" />
+          <!-- The catalogue only carries four categories; every other word returns
+               no_candidates and the screen goes empty. A judge should not have to
+               guess which words work, so name them and make them clickable. -->
+          <div class="cat-chips" id="catChips">
+            <button type="button" class="cat-chip" data-cat="skincare">skincare</button>
+            <button type="button" class="cat-chip" data-cat="electronics">electronics</button>
+            <button type="button" class="cat-chip" data-cat="supplements">supplements</button>
+            <button type="button" class="cat-chip" data-cat="consumables">consumables</button>
+          </div>
+          <div style="font-size:11.5px;color:var(--dim);margin-top:6px">Four categories are stocked. Pick one above, or type it.</div>
+        </div>
+        <datalist id="category-list">
+          <option value="skincare"></option>
+          <option value="electronics"></option>
+          <option value="supplements"></option>
+          <option value="consumables"></option>
+        </datalist>
         <div class="field"><label>Monthly budget (USD)</label><input id="budget" type="number" value="60" /></div>
       </div>
       <div class="grid2">
@@ -1008,6 +1032,29 @@ bindRun('gridBtn', { idle: '⊞ Show me all 16 cells', busy: 'Adjudicating 16 ca
   html += '</tbody></table>';
   wrap.innerHTML = html;
 });
+
+// Category chips: set the input and highlight the active one. A click here is the
+// same as typing the word, so the judge never has to guess which words exist.
+(function () {
+  const chips = document.getElementById('catChips');
+  const input = document.getElementById('category');
+  if (!chips || !input) return;
+  const paint = () => {
+    const v = (input.value || '').trim().toLowerCase();
+    chips.querySelectorAll('.cat-chip').forEach(c =>
+      c.classList.toggle('is-on', c.dataset.cat === v));
+  };
+  chips.querySelectorAll('.cat-chip').forEach(c => {
+    c.onclick = () => {
+      input.value = c.dataset.cat;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      paint();
+      input.focus();
+    };
+  });
+  input.addEventListener('input', paint);
+  paint();
+})();
 
 bindRun('shopBtn', { idle: '🛒 Find products & convene the Tribunal', busy: 'Channel3 searching → Tribunal deliberating…' }, async () => {
   const body = {
