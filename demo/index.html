@@ -1112,6 +1112,7 @@ bindRun('shopBtn', { idle: '🛒 Find products & convene the Tribunal', busy: 'C
       <div style="font-size:13px;color:var(--dim);margin-top:6px">${r.message||'No candidate approved.'}</div></div>`;
   }
 
+  window.__lastResults = r.allResults || [];
   if (candidateGridApi) { candidateGridApi.setGridOption('rowData', r.allResults || []);
     fitGridHeight(document.getElementById('candidateGrid'), candidateGridApi, (r.allResults || []).length); }
   await refreshLedger();
@@ -1143,6 +1144,17 @@ async function selectCandidate(row) {
 
   if (!canSettle) {
     document.getElementById('paypalWrap').classList.add('hidden');
+    // A judge who clicks a DENIED row sees the PayPal panel disappear and has no
+    // way to know that is the point, or how to make one appear. Measured on the
+    // live demo: this is exactly the question the panel left unanswered. Name the
+    // rule and point at a row that satisfies it.
+    const payable = (window.__lastResults || [])
+      .filter(x => x.decision === 'APPROVED' || x.decision === 'CONDITIONAL');
+    const hint = payable.length
+      ? `Approved and conditional verdicts do raise one — click <b>${payable[0].title}</b> ($${Number(payable[0].price).toLocaleString()}, ${payable[0].decision}) in the table to see the PayPal order.`
+      : `Nothing in this batch passed the gate, so there is no order to raise. Raise the budget and run the search again to see one.`;
+    const out2 = document.getElementById('settleOut');
+    if (out2) out2.innerHTML = out2.innerHTML + `<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:#fdf1ee;border:1px solid #e7c9c3;color:#7a2318">${hint}</div>`;
     return;
   }
 
