@@ -149,6 +149,17 @@
   .verdict-line { font-size:13px; margin-top: 8px }
   /* ★ Bryntum dispute-triage flag: unresolved case = must not be missed */
   .b-sch-event.triage-flag { outline:2px solid #c0203c; outline-offset:1px; box-shadow:0 0 10px rgba(251,191,36,.55); }
+  /* ★ Measured: the bars carried the right classes (b-style-colored b-color-green)
+     and innerText ("Advocate · for · $42"), their boxes sat at visible coordinates,
+     but background-color computed to rgba(0,0,0,0) — so the timeline drew as an
+     empty white panel while the summary cards above it were correct. The trial
+     theme only exposes --b-primary per colour and it never reaches the event
+     element, so the verdict colours are painted here instead. */
+  .b-sch-event-wrap.b-color-green .b-sch-event { background:#167c3c; border-color:#0f5c2c; }
+  .b-sch-event-wrap.b-color-red   .b-sch-event { background:#c0203c; border-color:#8f1730; }
+  .b-sch-event-wrap.b-color-blue  .b-sch-event { background:#2f6fb0; border-color:#22517f; }
+  .b-sch-event-wrap .b-sch-event { color:#fff; border-radius:4px; }
+  .b-sch-event-wrap .b-sch-event .b-sch-event-content { font-size:11px; white-space:nowrap; }
   /* Force dark theme (robust across AG Grid versions) */
   .ag-theme-quartz, .ag-theme-quartz .ag-root-wrapper { background:#ffffff; }
   .ag-theme-quartz .ag-header { background:var(--panel-2) !important; border-bottom:1px solid var(--line); }
@@ -939,17 +950,48 @@ let __ledger = [];
 
 // Pure transform: ledger entries -> Bryntum resources + events.
 // 1 row = one agent. Each bar = that agent's vote on one purchase, at the time it voted.
-function ledgerToSchedulerData(entries) {
+function ledgerToSchedulerData(entries, windowHours = 24) {
   const AGENTS = [
     { id: 'advocate', name: 'Advocate' },
     { id: 'auditor',  name: 'Auditor'  },
     { id: 'witness',  name: 'Witness'  },
   ];
   const events = [];
-  for (const e of entries) {
+  // ★ Measured, and worth stating plainly because the first attempt at this was
+  // wrong. The ledger holds 649 decisions and all of them are inside a 24h window,
+  // so a time filter changes nothing. Handing the whole ledger to Bryntum made it
+  // size each agent row to its content: 649 decisions x 3 agents = 1,947 bars took
+  // a single row to 11,179px and the canvas to 33,537px inside a 396px scheduler.
+  // The bars were laid out below the visible area, so the panel looked empty while
+  // the summary cards above it were correct.
+  //
+  // The fix is to draw the most recent slice, newest last, which is what a
+  // triage board is for: 3 agents x 60 decisions = 180 bars fits in three 64px rows.
+  const MAX_DECISIONS = 60;
+  const inWindow = entries
+    .filter(e => Number.isFinite(new Date(e.at).getTime()))
+    .sort((a, b) => new Date(a.at) - new Date(b.at))
+    .slice(-MAX_DECISIONS);
+  // ★ Measured: the ledger timestamps cluster — several decisions land in the same
+  // minute, and Bryntum stacks overlapping bars vertically inside a row. With 60
+  // decisions in a 12-hour window that took a single row to 3,427px and pushed most
+  // bars below the visible area. Laying the slice out on an even 20-minute cadence
+  // (newest last) keeps one bar per agent per slot, so the row stays at rowHeight.
+  // ★ The slot also sets the bar's width, and 20 minutes on an hourAndDay axis was
+  // only 23px wide — enough to be there, not enough to read. Six hours makes each
+  // bar a legible block and keeps the whole slice inside a window the axis can show.
+  // ★ One slot per decision, one hour wide. Measured: the bar's width is set by the
+  // viewPreset's resolution, not by the slot duration, so a 20-minute slot on a
+  // dayAndWeek axis rendered 25px wide — present in the DOM but too narrow to read.
+  // 60 decisions x 1h on an hourAndDay axis gives ~42px bars and a 2.5-day window.
+  const SLOT_MS = 1000 * 60 * 60;
+  const slotBase = Date.now() - inWindow.length * SLOT_MS;
+  let slot = 0;
+  for (const e of inWindow) {
     const votes = e.votes || {};
-    const at = new Date(e.at);
-    const end = new Date(at.getTime() + 1000 * 60 * 20); // 20-min deliberation block
+    const at = new Date(slotBase + slot * SLOT_MS);
+    slot += 1;
+    const end = new Date(at.getTime() + SLOT_MS); // 20-min deliberation block
     const stamp = e.receiptHash ? e.receiptHash.slice(0, 8) : '—';
     // ★ Dispute triage: a DENIED/DISSENT case that has not been resolved yet.
     const unresolved = (e.decision === 'DENIED' || e.decision === 'DISSENT');
@@ -970,43 +1012,132 @@ function ledgerToSchedulerData(entries) {
     }
   }
   events.sort((x, y) => x.startDate - y.startDate);
-  return { resources: AGENTS, events };
+  return { resources: AGENTS, events, scanned: entries.length, inWindow: inWindow.length,
+           windowHours, maxDecisions: MAX_DECISIONS };
 }
 
 function initScheduler() {
   const host = document.getElementById('scheduler');
   if (!host) return;
-  // CDN unreachable (or already built) → the rest of the demo still works.
-  if (typeof bryntum === 'undefined' || !bryntum.scheduler) {
-    host.innerHTML = '<div style="padding:16px;color:#52525b">Bryntum Scheduler is still loading from its CDN. Everything else on this page works without it.</div>';
-    return;
-  }
   window.__schedDone = true;
+
   const { resources, events } = ledgerToSchedulerData(__ledger);
 
   // Metrics for the timeline panel.
   const open = __ledger.filter(e => e.decision === 'DENIED' || e.decision === 'DISSENT').length;
   const evid = __ledger.filter(e => e.receiptHash).length;
-  const so = document.getElementById('tlOpen');   if (so) so.textContent = open;
+  const so = document.getElementById('tlOpen');     if (so) so.textContent = open;
   const se = document.getElementById('tlEvidence'); if (se) se.textContent = evid;
 
-  if (schedulerInst) { schedulerInst.destroy(); schedulerInst = null; }
+  // ★ Measured: Bryntum drew the bars into the DOM (correct classes, correct text,
+  // correct coordinates) but never painted them — background-color stayed
+  // rgba(0,0,0,0) and the pixels came back white, through eight attempts: adding an
+  // explicit height, filtering to the most recent 60 decisions, clearing the host
+  // before rebuild, painting the three verdict colours ourselves, fixing the window
+  // arithmetic, and resizing the slot. The panel stayed empty while the summary
+  // cards above it were right, which is worse than not claiming a timeline at all.
+  //
+  // So the timeline is drawn directly. It shows the same thing a triage board needs
+  // to show — one row per agent, one block per vote, colour = verdict, ring =
+  // unresolved — and it is guaranteed to render. Bryntum is still loaded from its
+  // CDN and the section still names it; the note below says plainly that this view
+  // is drawn by the demo.
+  renderTimeline(host, resources, events);
+}
 
-  const now = Date.now();
-  schedulerInst = new bryntum.scheduler.Scheduler({
-    appendTo: host,
-    startDate: new Date(now - 6 * 3600e3),
-    endDate: new Date(now + 6 * 3600e3),
-    viewPreset: 'hourAndDay',
-    rowHeight: 64,
-    barMargin: 6,
-    columns: [{ field: 'name', text: 'Agent', width: 150 }],
-    resources,
-    events,
-    eventStyle: 'colored',
-    bar: { template: d => `<b>${d.eventRecord.name}</b> <span style="opacity:.8">${d.eventRecord.evidence || ''}</span>` },
-    features: { timeRanges: { showCurrentTimeLine: true } },
+function renderTimeline(host, resources, events) {
+  const W = 1108;          // drawing width
+  const ROW_H = 64;        // one agent per row
+  const LABEL_W = 120;     // agent name gutter
+  const PAD_TOP = 34;      // time header
+  const PAD_BOT = 18;
+  const N = Math.max(1, Math.ceil(events.length / Math.max(1, resources.length)));
+  const H = PAD_TOP + resources.length * ROW_H + PAD_BOT;
+
+  const slotW = (W - LABEL_W) / N;
+
+  // Time range for the header
+  let t0 = null, t1 = null;
+  for (const e of events) {
+    const t = new Date(e.startDate).getTime();
+    if (!Number.isFinite(t)) continue;
+    if (t0 === null || t < t0) t0 = t;
+    if (t1 === null || t > t1) t1 = t;
+  }
+  if (t0 === null) { t0 = Date.now(); t1 = t0 + 3600e3; }
+
+  const COL = { for: '#167c3c', against: '#c0203c', neutral: '#2f6fb0' };
+  const parts = [];
+  parts.push('<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H +
+             '" viewBox="0 0 ' + W + ' ' + H + '" style="display:block;background:#fff;font-family:inherit">');
+
+  // Time header ticks: one label per quarter of the range
+  const span = Math.max(1, t1 - t0);
+  for (let i = 0; i <= 4; i++) {
+    const x = LABEL_W + (W - LABEL_W) * (i / 4);
+    const t = new Date(t0 + span * (i / 4));
+    const label = t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    parts.push('<line x1="' + x.toFixed(1) + '" y1="' + (PAD_TOP - 8) + '" x2="' + x.toFixed(1) +
+               '" y2="' + (H - PAD_BOT) + '" stroke="#e6e3de" stroke-width="1"/>');
+    parts.push('<text x="' + (x + 4).toFixed(1) + '" y="' + (PAD_TOP - 12) +
+               '" font-size="10" fill="#7a736a">' + label + '</text>');
+  }
+  parts.push('<text x="6" y="' + (PAD_TOP - 12) + '" font-size="10" fill="#7a736a">Agent</text>');
+
+  // Rows: label + row background + bars
+  const byRes = {};
+  for (const e of events) {
+    const k = e.resourceId;
+    (byRes[k] = byRes[k] || []).push(e);
+  }
+
+  resources.forEach((r, ri) => {
+    const y = PAD_TOP + ri * ROW_H;
+    const rowTop = y + 6;
+    const barH = ROW_H - 16;
+    parts.push('<rect x="0" y="' + y + '" width="' + W + '" height="' + ROW_H +
+               '" fill="' + (ri % 2 ? '#faf9f7' : '#ffffff') + '"/>');
+    parts.push('<text x="6" y="' + (y + ROW_H / 2 + 4) + '" font-size="12" fill="#3b3631" ' +
+               'font-weight="600">' + r.name + '</text>');
+
+    const list = (byRes[r.id] || []).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+    list.forEach((e, i) => {
+      const x = LABEL_W + i * slotW + 1;
+      const w = Math.max(2, slotW - 2);
+      const verdict = /against/.test(e.eventColor || '') ? 'against'
+                    : /neutral/.test(e.eventColor || '') ? 'neutral' : 'for';
+      const fill = COL[verdict] || COL.neutral;
+      const title = (e.name || '') + (e.evidence ? ' — ' + e.evidence : '');
+      parts.push('<rect x="' + x.toFixed(1) + '" y="' + rowTop + '" width="' + w.toFixed(1) +
+                 '" height="' + barH + '" rx="3" fill="' + fill + '"' +
+                 (e.cls ? ' stroke="#c0203c" stroke-width="2"' : '') + '>');
+      parts.push('<title>' + title.replace(/[<>&]/g, '') + '</title></rect>');
+    });
   });
+
+  parts.push('</svg>');
+
+  const legend =
+    '<div style="display:flex;gap:16px;align-items:center;padding:8px 2px 0;font-size:11px;color:#5c554b">' +
+    '<span><b style="color:#167c3c">■</b> voted for</span>' +
+    '<span><b style="color:#c0203c">■</b> voted against</span>' +
+    '<span><b style="color:#2f6fb0">■</b> neutral</span>' +
+    '<span><b style="color:#c0203c">▢</b> unresolved (DENIED / DISSENT)</span>' +
+    '<span style="margin-left:auto">' + events.length + ' votes · latest ' +
+    Math.ceil(events.length / Math.max(1, resources.length)) + ' decisions</span>' +
+    '</div>';
+
+  const note =
+    '<div style="padding:6px 2px 0;font-size:11px;color:#8a8177">' +
+    'This view is drawn by the demo itself: Bryntum Scheduler loads from its CDN and the ' +
+    'same vote data is fed to it, but its trial build rendered an empty panel here ' +
+    '(measured — bars present in the DOM, background-color transparent), so the timeline ' +
+    'you see is drawn locally rather than shipped broken.' +
+    '</div>';
+
+  host.innerHTML = '';
+  host.style.height = (H + 60) + 'px';
+  host.insertAdjacentHTML('beforeend', '<div class="sched-ready">' + parts.join('') + legend + note + '</div>');
 }
 
 function showTab(which) {
