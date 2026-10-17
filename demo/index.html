@@ -145,7 +145,15 @@
   .ag-theme-quartz .ag-body-viewport { background:#ffffff !important; }
   .ag-theme-quartz .ag-root-wrapper { border:1px solid var(--line) !important; border-radius:10px; }
   .reco { background:#dcfce7; border:1px solid #166534; border-radius:10px; padding: 12px; margin-bottom: 12px }
-  .reco.cond { background:#92400e; border-color:#b45309; }
+  .reco.cond { background:#92400e; border-color:#b45309; color:#ffffff; }
+  /* Measured on the live demo: the CONDITIONAL card is a brown background, but
+     the copy inside it inherited the page's warm text colour, so the title and
+     the "candidates · evaluated" line were orange-on-brown and unreadable. Set
+     the foreground for the whole card, then the .p/.t overrides below. */
+  .reco.cond .t { color:#ffffff; }
+  .reco.cond .p { color:#ffd9a0; }
+  .reco.cond span[style] { color:#fde8cf !important; }
+  .reco.cond div[style] { color:#fde8cf !important; }
   .reco .t { font-size:15px; font-weight:700; }
 .proof-lede { font-size: 13.5px; color: var(--dim); line-height: 1.65; margin: 0 0 16px; max-width: 70ch }
 .proof-lede code { font-size: 12.5px; background: var(--sunken); padding: 1px 5px; border-radius: 5px }
