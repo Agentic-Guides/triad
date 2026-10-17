@@ -1084,11 +1084,12 @@ async function selectCandidate(row) {
     returnUrl: 'https://example.com/return',
     cancelUrl: 'https://example.com/cancel',
   });
-  let capHtml = '';
-  if (o.ok) {
-    const c = await api('/api/capture', { orderId: o.orderId });
-    capHtml = `<div class="map-row">✓ Captured: <b>${c.capture?.status}</b> (order ${o.orderId})</div>`;
-  }
+  // Do NOT capture here. PayPal refuses a capture until the payer approves
+  // (UNPROCESSABLE_ENTITY / ORDER_NOT_APPROVED), so an automatic capture would
+  // always fail and print a scary error under a verdict that was actually fine.
+  // The product's whole claim is that the agents only propose and a human
+  // approves, so the order is raised and the approval link is handed over.
+  const capHtml = '';
   out.innerHTML = `<div class="map-row">Order <b>${o.orderId || o.error}</b> · mode <b>${o.mode || '-'}</b></div>
     ${o.approvalLink ? `<div class="map-row">Approval: <a href="${o.approvalLink}" target="_blank">${o.approvalLink}</a></div>` : ''}
     ${capHtml}
@@ -1187,8 +1188,8 @@ bindRun('run', { idle: '⚖️ Convene the Tribunal', busy: 'Agents deliberating
   if (r.decision === 'APPROVED' || r.decision === 'CONDITIONAL') {
     const o = await api('/api/order', { purchaseId: r.purchase.id, returnUrl:'https://example.com/return', cancelUrl:'https://example.com/cancel' });
     let capHtml = '';
-    if (o.ok) { const c = await api('/api/capture', { orderId: o.orderId });
-      capHtml = `<div class="map-row">✓ Captured: <b>${c.capture?.status}</b> (order ${o.orderId}) · mode ${c.mode}</div>`; }
+    // Same reasoning as the Shop tab: capture waits for the human.
+    // See the note above showSettle / the Shop path for the PayPal error this avoids.
     pw.classList.remove('hidden');
     document.getElementById('paypal').innerHTML = `
       <div class="map-row">Order: <b>${o.orderId||o.error}</b> · mode <b>${o.mode||'-'}</b></div>
