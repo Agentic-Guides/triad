@@ -48,3 +48,9 @@ out/
 _tts/
 _shot/
 
+# Submission videos belong on YouTube and Devpost, not in the repository.
+# Measured: these two files alone were 133MB of a 143MB tracked tree, which made
+# `git clone` slow for judges. The README links the finished video instead.
+# Images (01_main.png ...) stay tracked -- Devpost needs them and they are small.
+devpost-media/*.mp4
+!devpost-media/.gitkeep
