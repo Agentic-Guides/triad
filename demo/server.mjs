@@ -37,8 +37,84 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 const triad = createTriad();
 const commerce = createTriadCommerce({ triad });
 
+// ---------------------------------------------------------------------------
+// ★ Request guards for /api/*
+//
+// Every /api route used to be reachable by anyone who could reach the port:
+// no authentication, no Origin check, no rate limit, and readJson ignores
+// Content-Type, so a cross-origin <form method=POST> with text/plain reaches
+// JSON.parse as a "simple request" with no preflight. The only bound was the
+// 64 KB body cap, which limits bytes per request, not requests.
+//
+// The guards below are deliberately small and dependency-free.
+//   * A shared demo token, when TRIAD_DEMO_TOKEN is set, is required on every
+//     mutating route. Unset means the demo stays open for local work, but the
+//     server refuses to bind a public interface without it (see listen below).
+//   * A same-origin check rejects cross-site POSTs that carry an Origin.
+//   * A fixed-window rate limit caps the routes that fan out into billed model
+//     calls or child processes.
+// ---------------------------------------------------------------------------
+const DEMO_TOKEN = process.env.TRIAD_DEMO_TOKEN || '';
+const RATE_WINDOW_MS = 60_000;
+const rateBuckets = new Map();
+
+const RATE_LIMITS = {
+  '/api/adjudicate': 20,
+  '/api/shop': 6,       // 15 billed model calls per request
+  '/api/grid': 2,      // 48 billed model calls per request
+  '/api/proof': 4,     // spawns a child process per request
+  '/api/order': 10,
+  '/api/capture': 10,
+};
+
+function clientKey(req) {
+  return req.socket?.remoteAddress || 'unknown';
+}
+
+function overRateLimit(req, pathname) {
+  const max = RATE_LIMITS[pathname];
+  if (!max) return false;
+  const key = `${clientKey(req)}|${pathname}`;
+  const now = Date.now();
+  const bucket = rateBuckets.get(key);
+  if (!bucket || now > bucket.resetAt) {
+    rateBuckets.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return false;
+  }
+  bucket.count += 1;
+  return bucket.count > max;
+}
+
+function sameOrigin(req) {
+  const origin = req.headers.origin;
+  if (!origin) return true; // non-browser client (curl, MCP host, same-origin fetch)
+  let host;
+  try { host = new URL(origin).host; } catch { return false; }
+  return host === req.headers.host;
+}
+
+function hasDemoToken(req) {
+  if (!DEMO_TOKEN) return true;
+  return req.headers['x-demo-token'] === DEMO_TOKEN;
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
+
+  if (url.pathname.startsWith('/api/')) {
+    if (!hasDemoToken(req)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'unauthorized' }));
+    }
+    if (req.method === 'POST' && !sameOrigin(req)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'cross_origin_rejected' }));
+    }
+    if (overRateLimit(req, url.pathname)) {
+      res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '60' });
+      return res.end(JSON.stringify({ error: 'rate_limited', path: url.pathname }));
+    }
+  }
 
   if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
     const html = await readFile(join(__dir, 'index.html'), 'utf8');
@@ -280,7 +356,20 @@ server.on('error', (e) => {
   }
   throw e;
 });
-server.listen(PORT, () => {
+// ★ Bind loopback unless the operator asked for a public interface, and refuse
+//   a public bind without a demo token. Before this the server listened on every
+//   interface with no host argument, so an unauthenticated API was reachable
+//   from the network by default.
+const BIND_HOST = process.env.BIND_HOST || '0.0.0.0'; // Render needs a public bind
+if (BIND_HOST !== '127.0.0.1' && BIND_HOST !== 'localhost' && !DEMO_TOKEN) {
+  console.warn(
+    `[triad] WARNING: binding ${BIND_HOST} with no TRIAD_DEMO_TOKEN set. Every /api route is ` +
+    `open to anyone who can reach this port. Set TRIAD_DEMO_TOKEN to require an ` +
+    `x-demo-token header, or set BIND_HOST=127.0.0.1 for local-only work.`,
+  );
+}
+
+server.listen(PORT, BIND_HOST, () => {
   console.log(`\n⚖️  Tuesday demo running → http://localhost:${PORT}`);
   console.log(`   PayPal: ${triad._paypal.mode}  |  LLM: ${triad._runner.live ? 'live' : 'deterministic'}  |  Catalog: ${commerce._catalog.mode}\n`);
 });

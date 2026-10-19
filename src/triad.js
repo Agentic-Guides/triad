@@ -320,8 +320,32 @@ export function adjudicate(purchase, args, threshold = 2) {
   const votesAgainst = [advocate, auditor, witness].filter(a => a && a.verdict === 'against').length;
   const hasCondition = witness?.conditions != null;
 
+  // ★ A failed deterministic gate outranks any vote count.
+  //
+  // Before this, adjudicate() read only a.verdict. The Auditor's five gates
+  // were computed in deterministicReason() and then carried inside the
+  // arguments object, where nothing on this path ever looked at them: a
+  // 2-of-3 vote decided the outcome even with every gate failed. Worse,
+  // hasCondition was tested first, so a single witness condition turned the
+  // result into CONDITIONAL before the votesAgainst >= 2 branch could deny it —
+  // two dissenting agents were still overruled by one condition string.
+  //
+  // Gates are objective checks on the purchase itself (budget, share, repeat,
+  // double cost). A model cannot vote them away, so they are evaluated before
+  // the votes and cannot be outvoted.
+  const failedGates = [...new Set(
+    [advocate, auditor, witness]
+      .flatMap(a => (a?.gates ?? []).filter(g => g && g.pass === false).map(g => g.id))
+  )];
+  const hasGateFailure = failedGates.length > 0;
+
   let decision;
-  if (hasCondition) {
+  if (hasGateFailure) {
+    // Any failed gate is an objection no vote can clear. DENIED, not
+    // CONDITIONAL: a condition is something a human may accept, a failed gate
+    // is a fact that no acceptance changes.
+    decision = DECISION.DENIED;
+  } else if (hasCondition) {
     decision = DECISION.CONDITIONAL;
   } else if (votesAgainst >= 2) {
     decision = DECISION.DENIED;
@@ -336,6 +360,7 @@ export function adjudicate(purchase, args, threshold = 2) {
     votesFor,
     votesAgainst,
     threshold,
+    failedGates,
     purchase,
     arguments: args,
     // 決定とともに「なぜ」を残す。人間に結果ではなく対立の形を見せる。

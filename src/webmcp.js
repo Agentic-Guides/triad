@@ -267,9 +267,73 @@ export function createTriad({ runner, paypal } = {}) {
     };
   }
 
-  async function triadCaptureOrder({ orderId } = {}) {
+  /**
+   * ★ Settlement is bound to the adjudication that authorised it.
+   *
+   * Before this, any orderId was forwarded straight to PayPal: no pendingOrders
+   * lookup, no decision check, no receipt comparison, no consumption record.
+   * createOrder was gated at the line above this one, but the step that
+   * actually moves money had no gate at all, so the product's guarantee ("a
+   * human approves in PayPal before capture") was enforced only by PayPal's own
+   * ORDER_NOT_APPROVED response — nothing in this codebase.
+   *
+   * Now capture requires an adjudicated purchase whose order this process
+   * minted, whose receipt hash still matches the custom_id stamped on that
+   * order, and which has not already been captured.
+   */
+  async function triadCaptureOrder({ orderId, purchaseId } = {}) {
     if (!orderId) return { ok: false, error: 'orderId_required' };
-    const capture = await _paypal.captureOrder(orderId);
+
+    let entry = purchaseId ? pendingOrders.get(purchaseId) : null;
+    if (!entry) {
+      entry = [...pendingOrders.values()].find((e) => e.order?.id === orderId) || null;
+    }
+    if (!entry) {
+      return {
+        ok: false,
+        error: 'order_not_found',
+        note: 'This order was not created by an adjudication in this process.',
+      };
+    }
+    if (entry.decision !== DECISION.APPROVED && entry.decision !== DECISION.CONDITIONAL) {
+      return { ok: false, error: 'not_approved', decision: entry.decision };
+    }
+    if (!entry.order || entry.order.id !== orderId) {
+      return { ok: false, error: 'order_purchase_mismatch', orderId };
+    }
+
+    // Re-verify the audit trail at the moment of settlement: the hash stamped
+    // into the order must still equal the receipt this process holds.
+    const stamped = entry.order.purchase_units?.[0]?.custom_id;
+    if (!entry.receipt || !stamped || hashFromCustomId(stamped) !== entry.receipt.hash) {
+      return { ok: false, error: 'receipt_mismatch' };
+    }
+    if (entry.captured) {
+      return { ok: false, error: 'already_captured', capture: entry.captured };
+    }
+
+    // Mark before the call so a retry cannot double-capture.
+    entry.captured = { at: new Date().toISOString(), orderId };
+    let capture;
+    try {
+      capture = await _paypal.captureOrder(orderId);
+    } catch (error) {
+      delete entry.captured;
+      throw error;
+    }
+
+    // A MOCK capture is a stub: it completes without any human approval, so it
+    // must not be reported as a successful settlement.
+    if (capture?.mock === true || _paypal.mode === 'MOCK') {
+      return {
+        ok: false,
+        error: 'mock_capture_not_proof',
+        capture,
+        mode: _paypal.mode,
+        note: 'Mock mode completed the call locally; no payment was approved or captured.',
+      };
+    }
+
     return { ok: capture.status === 'COMPLETED', capture, mode: _paypal.mode };
   }
 

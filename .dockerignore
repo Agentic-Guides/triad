@@ -1,0 +1,30 @@
+# ★ The Docker build context is the working directory, not the git index.
+# .gitignore has no effect here, so without this file `COPY . .` bakes the
+# untracked .env (and .git, and 600 MB of recording material) into the image.
+# Allowlist the runtime surface instead of denylisting secrets: a file added
+# to the working tree tomorrow cannot ride along by default.
+*
+!package.json
+!demo/
+!src/
+!paypal/
+!README.md
+!LICENSE
+
+# Belt and braces: never ship local secrets, VCS data, or developer material.
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.dockerignore
+node_modules/
+_take/
+devpost-media/
+devpost-video/
+*.bak
+*.bak-*
+*.mp4
+*.mov
+*.wav
+*.mp3

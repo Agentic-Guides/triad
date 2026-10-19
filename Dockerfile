@@ -13,7 +13,10 @@ WORKDIR /app
 
 # Copy the repo as the project ships it. There are no dependencies to install --
 # package.json declares none, and demo/server.mjs only imports node: builtins.
-COPY . .
+COPY package.json ./
+COPY demo ./demo
+COPY src ./src
+COPY paypal ./paypal
 
 # Render routes external traffic to $PORT; demo/server.mjs reads it.
 ENV PORT=7860

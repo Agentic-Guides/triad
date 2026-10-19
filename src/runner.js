@@ -135,15 +135,43 @@ As the neutral judge, decide. Output JSON: {"verdict":"for"|"against","reasons":
     try {
       const m = raw.match(/\{[\s\S]*\}/);
       const j = JSON.parse(m ? m[0] : raw);
-      const verdict = (j.verdict || (agent.role === ROLES.AUDITOR ? 'against' : 'for')).toLowerCase();
+      // ★ A reply that names no verdict is an abstention, not an approval.
+      //
+      // This used to default to 'for' for every non-Auditor role, so any
+      // completion that omitted the field — a refusal, a truncated answer, a
+      // prompt-injected reply — silently became a vote to buy. Two such votes
+      // reached APPROVED. Absence of a decision must never read as consent.
+      const rawVerdict = typeof j.verdict === 'string' ? j.verdict.trim().toLowerCase() : '';
+      const verdict = rawVerdict === 'for' || rawVerdict === 'against' ? rawVerdict : 'neutral';
+
+      // ★ conditions is a decision input, not decoration: adjudicate() turns any
+      //   non-null value into CONDITIONAL, which passes the money gate. It used
+      //   to be stored as whatever the model emitted (object, number, array),
+      //   so an unvalidated shape could flip the outcome. Only a bounded string
+      //   survives, and it is length-capped so it cannot carry a payload into
+      //   the DOM either.
+      const CONDITIONS_MAX = 240;
+      let conditions = null;
+      if (typeof j.conditions === 'string') {
+        const c = j.conditions.trim();
+        if (c && c !== 'null' && c.toLowerCase() !== 'none') conditions = c.slice(0, CONDITIONS_MAX);
+      } else if (Array.isArray(j.conditions)) {
+        const joined = j.conditions.filter((x) => typeof x === 'string').join('; ').trim();
+        if (joined) conditions = joined.slice(0, CONDITIONS_MAX);
+      }
+
+      const reasons = (Array.isArray(j.reasons) ? j.reasons : [j.reasons])
+        .filter((r) => r != null)
+        .map((r) => String(r).slice(0, 400));
+
       return {
         agent: agent.role,
         title: agent.title,
         stance: agent.stance,
-        verdict: verdict === 'for' ? 'for' : verdict === 'against' ? 'against' : 'neutral',
-        reasons: Array.isArray(j.reasons) ? j.reasons : [String(j.reasons || '')],
-        conditions: j.conditions && j.conditions !== 'null' ? j.conditions : null,
-        confidence: typeof j.confidence === 'number' ? j.confidence : 0.5,
+        verdict,
+        reasons,
+        conditions,
+        confidence: typeof j.confidence === 'number' && Number.isFinite(j.confidence) ? j.confidence : 0.5,
         model: agent.model,
       };
     } catch {
